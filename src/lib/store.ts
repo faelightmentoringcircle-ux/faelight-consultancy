@@ -847,13 +847,7 @@ export interface Registration {
 
 const REGISTRATION_SEED: Registration[] = [
   { id: "reg-01", name: "AJ Obien", email: "", item: "Foundations Class", type: "class", batch: "3", tier: "Scholar", amountPaid: "0", paymentMethod: "via Maia", datePaid: "", status: "registered", leadFrom: "Personal", niche: "Undergrad", notes: "Maia's nephew", archived: false, createdAt: daysAgo(20) },
-  { id: "reg-02", name: "Risa", email: "", item: "Foundations Class", type: "class", batch: "3", tier: "VIP", amountPaid: "", paymentMethod: "", datePaid: "", status: "registered", leadFrom: "Personal", niche: "", notes: "", archived: false, createdAt: daysAgo(19) },
-  { id: "reg-03", name: "Zelle", email: "", item: "Foundations Class", type: "class", batch: "3", tier: "VIP", amountPaid: "", paymentMethod: "", datePaid: "", status: "registered", leadFrom: "BNI Referral", niche: "", notes: "", archived: false, createdAt: daysAgo(19) },
-  { id: "reg-04", name: "Sheryll Navalta", email: "", item: "Foundations Class", type: "class", batch: "3", tier: "VIP", amountPaid: "", paymentMethod: "", datePaid: "", status: "registered", leadFrom: "BNI Referral", niche: "", notes: "", archived: false, createdAt: daysAgo(18) },
-  { id: "reg-05", name: "Dan Vincent Ronquillo", email: "", item: "Foundations Class", type: "class", batch: "3", tier: "Regular", amountPaid: "", paymentMethod: "", datePaid: "", status: "registered", leadFrom: "", niche: "", notes: "", archived: false, createdAt: daysAgo(17) },
-  { id: "reg-06", name: "Ellison Bartolome", email: "", item: "Foundations Class", type: "class", batch: "4", tier: "Regular", amountPaid: "", paymentMethod: "", datePaid: "", status: "registered", leadFrom: "", niche: "", notes: "", archived: false, createdAt: daysAgo(3) },
   { id: "reg-07", name: "Virgil Alvarez", email: "iambordo@gmail.com", item: "Systems Audit", type: "service", batch: "", tier: "", amountPaid: "₱7,500", paymentMethod: "GCash", datePaid: daysAgo(6), status: "paid", leadFrom: "Referral", niche: "Food & Beverage", notes: "", archived: false, createdAt: daysAgo(8) },
-  { id: "reg-08", name: "Cap Hernandez", email: "cap@uncapped.asia", item: "Notion Consultation", type: "service", batch: "", tier: "", amountPaid: "₱2,500", paymentMethod: "Bank", datePaid: "", status: "registered", leadFrom: "BNI", niche: "Coaching", notes: "", archived: false, createdAt: daysAgo(2) },
 ];
 
 export function getRegistrations(): Registration[] {
@@ -2266,15 +2260,6 @@ function ymdFromNow(n: number): string {
   return ymd(d);
 }
 
-function futureSlot(dayOffset: number, hour: number): { s: string; e: string } {
-  const d = new Date();
-  d.setDate(d.getDate() + dayOffset);
-  d.setHours(hour, 0, 0, 0);
-  const e = new Date(d);
-  e.setHours(hour + 1);
-  return { s: d.toISOString(), e: e.toISOString() };
-}
-
 function ensureSeed(force = false) {
   if (typeof window === "undefined") return;
   if (!force && localStorage.getItem(KEYS.seeded)) return;
@@ -2427,77 +2412,9 @@ function ensureSeed(force = false) {
     },
   ];
 
-  const s1 = futureSlot(1, 14);
-  const s2 = futureSlot(3, 11);
-  const s3 = futureSlot(5, 16);
-  const p1 = { s: daysAgo(9), e: daysAgo(9) };
-  const seedBookings: Booking[] = [
-    {
-      id: "bk-seed-1",
-      leadId: "lead-seed-1",
-      bookingTypeId: "bt-discovery",
-      bookingTypeName: "Discovery Consultation",
-      startsAt: s1.s,
-      endsAt: s1.e,
-      clientName: "Andrea Villaruz",
-      clientEmail: "andrea.v@example.com",
-      clientPhone: "+63 917 111 2233",
-      agenda: "Untangle café operations, discuss a starter system.",
-      meetLink: "https://meet.google.com/fae-disc-and",
-      status: "confirmed",
-      createdAt: daysAgo(2),
-    },
-    {
-      id: "bk-seed-2",
-      leadId: null,
-      bookingTypeId: "bt-notion",
-      bookingTypeName: "Notion Consultation",
-      startsAt: s2.s,
-      endsAt: s2.e,
-      clientName: "Jules Prieto",
-      clientEmail: "jules.p@example.com",
-      clientPhone: "",
-      agenda: "Plan a Notion CRM for a small agency.",
-      meetLink: "https://meet.google.com/fae-notion-jul",
-      status: "confirmed",
-      createdAt: daysAgo(1),
-    },
-    {
-      id: "bk-seed-3",
-      leadId: null,
-      bookingTypeId: "bt-coaching",
-      bookingTypeName: "Coaching / 1:1 Session",
-      startsAt: s3.s,
-      endsAt: s3.e,
-      clientName: "Nadia Cruz",
-      clientEmail: "nadia.c@example.com",
-      clientPhone: "+63 927 900 4415",
-      agenda: "Leadership coaching — stepping into an EVA role.",
-      meetLink: "https://meet.google.com/fae-coach-nad",
-      status: "confirmed",
-      createdAt: daysAgo(0),
-    },
-    {
-      id: "bk-seed-4",
-      leadId: "lead-seed-4",
-      bookingTypeId: "bt-discovery",
-      bookingTypeName: "Discovery Consultation",
-      startsAt: p1.s,
-      endsAt: p1.e,
-      clientName: "Bianca Ocampo",
-      clientEmail: "bianca.o@example.com",
-      clientPhone: "+63 906 220 7781",
-      agenda: "SOP scoping for dental clinic onboarding.",
-      meetLink: "https://meet.google.com/fae-disc-bia",
-      status: "completed",
-      feeLabel: "₱2,500 — payable after confirmation",
-      paymentStatus: "paid",
-      amountPaid: 2500,
-      paymentMethod: "GCash",
-      paidAt: daysAgo(9),
-      createdAt: daysAgo(12),
-    },
-  ];
+  // Bookings (and therefore Payments, which are derived from bookings) start
+  // empty for go-live — no seeded demo bookings/payments.
+  const seedBookings: Booking[] = [];
 
   // A couple of calendar events — one personal hold (app), one synced in
   // from the linked calendar (google) — to show two-way sync.
