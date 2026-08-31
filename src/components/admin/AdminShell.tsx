@@ -16,6 +16,7 @@ import {
   AdminUser,
 } from "@/lib/auth";
 import { AdminTopbar } from "./AdminTopbar";
+import { Fireflies, FairySwirl } from "@/components/Motifs";
 import { initials } from "@/lib/format";
 
 type NavEntry = { href: string; label: string; icon: string; module: string; exact?: boolean };
@@ -283,9 +284,11 @@ function SupabaseLoginScreen() {
   const lbl = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-firefly-bright/80";
 
   return (
-    <div className="relative grid min-h-dvh place-items-center overflow-hidden bg-enchanted p-6 text-parchment">
+    <div className="starfield relative grid min-h-dvh place-items-center overflow-hidden bg-enchanted p-6 text-parchment">
       <div className="pointer-events-none absolute -left-20 top-10 h-96 w-96 rounded-full bg-firefly/15 blur-3xl" />
       <div className="pointer-events-none absolute -right-20 bottom-0 h-96 w-96 rounded-full bg-twilight-light/30 blur-3xl" />
+      <Fireflies count={22} />
+      <FairySwirl count={3} />
       <div className="relative z-10 w-full max-w-md">
         <div className="mb-6 text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -8,7 +8,7 @@ import {
   renderTemplate, emailDeliveryReady, getUpcomingSessions, sessionDateText,
 } from "@/lib/store";
 import {
-  getAllUsers, addUser, removeUser, updateUser, emailExists, isSeedUser,
+  getAllUsers, addUser, removeUser, updateUser, archiveUser, emailExists,
   getUserModules, setUserModuleLevel, ADMIN_MODULES,
   useAuth, AdminUser, Role, DEMO_PASSWORD, AccessLevel,
 } from "@/lib/auth";
@@ -401,6 +401,8 @@ function TeamAccounts() {
   const [form, setForm] = useState({ name: "", email: "", title: "", role: "team" as Role });
   const [error, setError] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [editUser, setEditUser] = useState<AdminUser | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
   const toggleUser = (id: string) => setExpanded((prev) => {
     const next = new Set(prev);
     next.has(id) ? next.delete(id) : next.add(id);
@@ -485,13 +487,20 @@ function TeamAccounts() {
         </form>
       )}
 
-      <div className="mt-4 space-y-3">
-        {users.map((u) => {
-          const seed = isSeedUser(u.id);
+      {(() => { const arN = users.filter((u) => u.archived).length; return (
+        <div className="mt-3 flex justify-end">
+          <button onClick={() => setShowArchived((s) => !s)} className="text-xs font-semibold text-forest hover:underline">
+            {showArchived ? `← Active accounts` : `🗄 Archived (${arN})`}
+          </button>
+        </div>
+      ); })()}
+
+      <div className="mt-2 space-y-3">
+        {users.filter((u) => (showArchived ? u.archived : !u.archived)).map((u) => {
           const isOpen = expanded.has(u.id);
           return (
-            <div key={u.id} className="rounded-xl border border-firefly/15 p-3">
-              <div className="flex items-center gap-3">
+            <div key={u.id} className={`rounded-xl border border-firefly/15 p-3 ${u.archived ? "opacity-70" : ""}`}>
+              <div className="flex flex-wrap items-center gap-3">
                 <button onClick={() => toggleUser(u.id)} className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-ink-faint transition hover:bg-firefly/10" aria-label={isOpen ? "Collapse" : "Expand"}>
                   <span className={`text-[10px] transition-transform ${isOpen ? "rotate-90" : ""}`}>▶</span>
                 </button>
@@ -499,35 +508,23 @@ function TeamAccounts() {
                   {initials(u.name)}
                 </div>
                 <button onClick={() => toggleUser(u.id)} className="min-w-0 flex-1 text-left">
-                  <p className="truncate text-sm font-medium text-forest-deep">{u.name}</p>
-                  <p className="truncate text-xs text-ink-faint">{u.title}{u.role !== "admin" && !isOpen ? " · tap to set access" : ""}</p>
+                  <p className="truncate text-sm font-medium text-forest-deep">{u.name}{u.archived && <span className="ml-2 rounded-full bg-stone-200 px-1.5 text-[9px] font-semibold text-stone-600">archived</span>}</p>
+                  <p className="truncate text-xs text-ink-faint">{u.email || u.title}</p>
                 </button>
-                {seed ? (
-                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${
-                    u.role === "admin" ? "bg-firefly/20 text-firefly-deep" : "bg-forest/10 text-forest"
-                  }`}>
-                    {u.role}
-                  </span>
-                ) : (
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    <select
-                      value={u.role}
-                      onChange={(e) => updateUser(u.id, { role: e.target.value as Role })}
-                      className="rounded-md border border-firefly/25 bg-white/70 px-1.5 py-1 text-[10px] font-semibold capitalize outline-none focus:border-firefly"
-                      aria-label={`Role for ${u.name}`}
-                    >
-                      <option value="team">team</option>
-                      <option value="admin">admin</option>
-                    </select>
-                    <button
-                      onClick={() => { if (confirm(`Remove ${u.name}'s account?`)) removeUser(u.id); }}
-                      className="rounded-md border border-rose-200 px-1.5 py-1 text-[10px] font-semibold text-rose-600 hover:bg-rose-50"
-                      aria-label={`Remove ${u.name}`}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                )}
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <select
+                    value={u.role}
+                    onChange={(e) => updateUser(u.id, { role: e.target.value as Role })}
+                    className="rounded-md border border-firefly/25 bg-white/70 px-1.5 py-1 text-[10px] font-semibold capitalize outline-none focus:border-firefly"
+                    aria-label={`Role for ${u.name}`}
+                  >
+                    <option value="team">team</option>
+                    <option value="admin">admin</option>
+                  </select>
+                  <button onClick={() => setEditUser(u)} className="rounded-md border border-firefly/25 px-1.5 py-1 text-[10px] font-semibold text-forest hover:bg-firefly/10">Edit</button>
+                  <button onClick={() => archiveUser(u.id, !u.archived)} className="rounded-md border border-firefly/25 px-1.5 py-1 text-[10px] font-semibold text-ink-soft hover:bg-firefly/10">{u.archived ? "Restore" : "Archive"}</button>
+                  <button onClick={() => { if (confirm(`Delete ${u.name}'s account? This cannot be undone.`)) removeUser(u.id); }} className="rounded-md border border-rose-200 px-1.5 py-1 text-[10px] font-semibold text-rose-600 hover:bg-rose-50">Delete</button>
+                </div>
               </div>
 
               {isOpen && (
@@ -541,6 +538,8 @@ function TeamAccounts() {
           );
         })}
       </div>
+
+      {editUser && <EditUserModal user={editUser} onClose={() => setEditUser(null)} />}
       <p className="mt-3 text-xs text-ink-faint">
         The 7 founding accounts are protected. Team members only see the sections you assign here.
       </p>
@@ -562,6 +561,44 @@ const MODULE_ICONS: Record<string, string> = {
   feedback: "❤", services: "❖", sessions: "◫", registrations: "☑", pool: "⚑", team: "❂",
   meetings: "▣", templates: "▤", brochures: "▥", content: "◨", guide: "?",
 };
+
+// Edit a user's details (works for seed + added accounts via overrides).
+function EditUserModal({ user, onClose }: { user: AdminUser; onClose: () => void }) {
+  const [name, setName] = useState(user.name);
+  const [email, setEmail] = useState(user.email);
+  const [title, setTitle] = useState(user.title);
+  const [role, setRole] = useState<Role>(user.role);
+  const input = "w-full rounded-lg border border-firefly/25 bg-white px-3 py-2 text-sm outline-none focus:border-firefly";
+  const lbl = "block text-[10px] font-semibold uppercase tracking-wide text-ink-faint";
+  function save() {
+    updateUser(user.id, { name: name.trim(), email: email.trim(), title: title.trim(), role });
+    onClose();
+  }
+  return (
+    <div className="fixed inset-0 z-[90] grid place-items-center bg-forest-deep/50 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl border border-firefly/25 bg-parchment-card p-6 shadow-card" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h2 className="font-serif text-xl text-forest-deep">Edit account</h2>
+          <button onClick={onClose} className="text-xl text-ink-faint hover:text-forest">✕</button>
+        </div>
+        <div className="mt-4 space-y-3">
+          <label className="block space-y-1"><span className={lbl}>Name</span><input className={input} value={name} onChange={(e) => setName(e.target.value)} /></label>
+          <label className="block space-y-1"><span className={lbl}>Login email</span><input type="email" className={input} value={email} onChange={(e) => setEmail(e.target.value)} /></label>
+          <label className="block space-y-1"><span className={lbl}>Title / role label</span><input className={input} value={title} onChange={(e) => setTitle(e.target.value)} /></label>
+          <label className="block space-y-1"><span className={lbl}>Access role</span>
+            <select className={input} value={role} onChange={(e) => setRole(e.target.value as Role)}>
+              <option value="team">Team</option><option value="admin">Admin</option>
+            </select>
+          </label>
+        </div>
+        <div className="mt-5 flex justify-end gap-2">
+          <button onClick={onClose} className="btn-ghost !py-2 text-xs">Cancel</button>
+          <button onClick={save} disabled={!name.trim()} className="btn-primary !py-2 text-xs disabled:opacity-50">Save changes</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function AccessEditor({ user }: { user: AdminUser }) {
   const [mods, setMods] = useState<string[]>([]);

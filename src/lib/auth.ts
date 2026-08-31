@@ -18,6 +18,7 @@ export interface AdminUser {
   email: string;
   role: Role;
   title: string;
+  archived?: boolean;
 }
 
 export const DEMO_PASSWORD = "faelight-demo";
@@ -60,9 +61,41 @@ function writeCustomUsers(users: AdminUser[]) {
   window.dispatchEvent(new CustomEvent("fae:auth"));
 }
 
-// The full account list = seed team + any added accounts.
-export function getAllUsers(): AdminUser[] {
-  return [...SEED_USERS, ...readCustomUsers()];
+// Edits to any account (incl. seed accounts) are stored as overrides so admins
+// can rename / re-role / archive / delete anyone. Synced to Supabase.
+const USER_OVERRIDES_KEY = "fae.useroverrides.v1";
+interface UserOverride { name?: string; email?: string; title?: string; role?: Role; archived?: boolean; deleted?: boolean; }
+function readUserOverrides(): Record<string, UserOverride> {
+  if (typeof window === "undefined") return {};
+  try { return JSON.parse(localStorage.getItem(USER_OVERRIDES_KEY) || "{}") as Record<string, UserOverride>; }
+  catch { return {}; }
+}
+function saveUserOverride(id: string, patch: UserOverride) {
+  const all = readUserOverrides();
+  all[id] = { ...all[id], ...patch };
+  localStorage.setItem(USER_OVERRIDES_KEY, JSON.stringify(all));
+  pushKey(USER_OVERRIDES_KEY, all);
+  window.dispatchEvent(new CustomEvent("fae:auth"));
+}
+
+// The full account list = seed team + added accounts, with admin edits applied,
+// minus deleted. Pass false to hide archived accounts.
+export function getAllUsers(includeArchived = true): AdminUser[] {
+  const ov = readUserOverrides();
+  const list = [...SEED_USERS, ...readCustomUsers()]
+    .filter((u) => !ov[u.id]?.deleted)
+    .map((u) => {
+      const o = ov[u.id] ?? {};
+      return {
+        ...u,
+        name: o.name ?? u.name,
+        email: o.email ?? u.email,
+        title: o.title ?? u.title,
+        role: o.role ?? u.role,
+        archived: o.archived ?? u.archived ?? false,
+      } as AdminUser;
+    });
+  return includeArchived ? list : list.filter((u) => !u.archived);
 }
 
 export function addUser(input: Omit<AdminUser, "id">): AdminUser {
@@ -75,15 +108,26 @@ export function addUser(input: Omit<AdminUser, "id">): AdminUser {
 }
 
 export function updateUser(id: string, patch: Partial<Omit<AdminUser, "id">>) {
-  if (isSeedUser(id)) return; // seed accounts are read-only in the demo
-  writeCustomUsers(
-    readCustomUsers().map((u) => (u.id === id ? { ...u, ...patch } : u))
-  );
+  if (readCustomUsers().some((u) => u.id === id)) {
+    writeCustomUsers(readCustomUsers().map((u) => (u.id === id ? { ...u, ...patch } : u)));
+  } else {
+    saveUserOverride(id, patch); // seed account → store as an override
+  }
+}
+
+export function archiveUser(id: string, archived: boolean) {
+  updateUser(id, { archived });
 }
 
 export function removeUser(id: string) {
-  if (isSeedUser(id)) return;
-  writeCustomUsers(readCustomUsers().filter((u) => u.id !== id));
+  if (readCustomUsers().some((u) => u.id === id)) {
+    writeCustomUsers(readCustomUsers().filter((u) => u.id !== id));
+    const ov = readUserOverrides();
+    if (ov[id]) { delete ov[id]; localStorage.setItem(USER_OVERRIDES_KEY, JSON.stringify(ov)); pushKey(USER_OVERRIDES_KEY, ov); }
+    window.dispatchEvent(new CustomEvent("fae:auth"));
+  } else {
+    saveUserOverride(id, { deleted: true }); // seed account → soft-delete
+  }
 }
 
 export function emailExists(email: string): boolean {
