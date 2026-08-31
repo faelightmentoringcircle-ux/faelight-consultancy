@@ -1246,7 +1246,7 @@ export function renderInvoiceParticulars(tpl: string, d: DocRecord): string {
 // --- Booking types (discovery call etc.) — editable from admin -------------
 export interface BookingTypeOverride {
   name?: string; durationMin?: number; feeLabel?: string; description?: string;
-  active?: boolean; deleted?: boolean;
+  active?: boolean; showFee?: boolean; deleted?: boolean;
 }
 export function getBookingTypeOverrides(): Record<string, BookingTypeOverride> {
   return read<Record<string, BookingTypeOverride>>(KEYS.bookingTypes, {});
@@ -1284,6 +1284,7 @@ export function getBookingTypes(includeInactive = false): BookingType[] {
         feeLabel: o.feeLabel ?? b.feeLabel,
         description: o.description ?? b.description,
         active: o.active ?? b.active,
+        showFee: o.showFee ?? b.showFee ?? true,
       };
     })
     .filter((b) => includeInactive || b.active);

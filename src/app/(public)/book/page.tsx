@@ -175,7 +175,7 @@ export default function BookPage() {
                   <h3 className="mt-2 font-serif text-lg text-forest-deep">{bt.name}</h3>
                   <p className="mt-1 text-xs font-semibold text-firefly-deep">{bt.durationMin} minutes</p>
                   <p className="mt-3 text-sm text-ink-soft">{bt.description}</p>
-                  <p className="mt-4 border-t border-firefly/15 pt-3 text-xs text-ink-faint">{bt.feeLabel}</p>
+                  {bt.showFee !== false && <p className="mt-4 border-t border-firefly/15 pt-3 text-xs text-ink-faint">{bt.feeLabel}</p>}
                 </button>
               ))}
             </div>
@@ -298,7 +298,7 @@ export default function BookPage() {
             <div className="mx-auto max-w-xl">
               <SummaryCard bookingType={bookingType} slot={slot} full details={details} confLabel={confName(settings)} />
               <div className="mt-4 rounded-xl border border-firefly/20 bg-parchment-warm/60 p-4 text-sm text-ink-soft">
-                <p className="font-semibold text-forest-deep">{bookingType.feeLabel}</p>
+                {bookingType.showFee !== false && <p className="font-semibold text-forest-deep">{bookingType.feeLabel}</p>}
                 <p className="mt-1">{settings.paymentInstructions}</p>
               </div>
               <div className="mt-6 flex justify-between">

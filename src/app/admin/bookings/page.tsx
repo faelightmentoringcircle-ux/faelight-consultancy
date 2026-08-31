@@ -227,21 +227,35 @@ function BookingTypesManager({ onClose }: { onClose: () => void }) {
   const [types, setTypes] = useState<BookingType[]>([]);
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState({ name: "", durationMin: 60, feeLabel: "", description: "" });
+  const [savedNote, setSavedNote] = useState(false);
 
-  useEffect(() => {
-    const sync = () => setTypes(getBookingTypes(true)); // include inactive so admin sees all
-    sync();
-    return onStoreChange(sync);
-  }, []);
+  // Load an editable copy once (don't live-sync, so typing isn't clobbered).
+  useEffect(() => { setTypes(getBookingTypes(true).map((t) => ({ ...t, showFee: t.showFee !== false }))); }, []);
 
   const input = "w-full rounded-lg border border-firefly/25 bg-white px-3 py-2 text-sm outline-none focus:border-firefly";
   const lbl = "block text-[10px] font-semibold uppercase tracking-wide text-ink-faint";
 
+  const patch = (i: number, p: Partial<BookingType>) =>
+    setTypes((ts) => ts.map((t, idx) => (idx === i ? { ...t, ...p } : t)));
+
+  function saveAll() {
+    types.forEach((t) => saveBookingTypeOverride(t.id, {
+      name: t.name, durationMin: t.durationMin, feeLabel: t.feeLabel,
+      description: t.description, active: t.active, showFee: t.showFee !== false,
+    }));
+    setSavedNote(true); setTimeout(() => setSavedNote(false), 2500);
+  }
   function addType() {
     if (!draft.name.trim()) return;
-    addBookingType({ name: draft.name.trim(), durationMin: Number(draft.durationMin) || 60, feeLabel: draft.feeLabel.trim() || "Fee on request", description: draft.description.trim(), active: true });
+    const bt = addBookingType({ name: draft.name.trim(), durationMin: Number(draft.durationMin) || 60, feeLabel: draft.feeLabel.trim() || "Fee on request", description: draft.description.trim(), active: true, showFee: true });
+    setTypes((ts) => [...ts, { ...bt, showFee: true }]);
     setDraft({ name: "", durationMin: 60, feeLabel: "", description: "" });
     setAdding(false);
+  }
+  function remove(id: string, name: string) {
+    if (!confirm(`Remove "${name}"?`)) return;
+    removeBookingType(id);
+    setTypes((ts) => ts.filter((t) => t.id !== id));
   }
 
   return (
@@ -250,30 +264,34 @@ function BookingTypesManager({ onClose }: { onClose: () => void }) {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-serif text-xl text-forest-deep">Manage Booking Types</h2>
-            <p className="text-[11px] text-ink-faint">Edits show live on the public “Book a Discovery Call” page.</p>
+            <p className="text-[11px] text-ink-faint">Edits show live on the public “Book a Discovery Call” page. Remember to Save.</p>
           </div>
           <button onClick={onClose} className="text-xl text-ink-faint hover:text-forest">✕</button>
         </div>
 
         <div className="mt-4 space-y-3">
-          {types.map((t) => (
+          {types.map((t, i) => (
             <div key={t.id} className="rounded-xl border border-firefly/15 bg-white/60 p-4">
               <div className="grid gap-3 sm:grid-cols-[1fr,110px]">
                 <label className="space-y-1"><span className={lbl}>Name</span>
-                  <input className={input} defaultValue={t.name} onBlur={(e) => saveBookingTypeOverride(t.id, { name: e.target.value })} /></label>
+                  <input className={input} value={t.name} onChange={(e) => patch(i, { name: e.target.value })} /></label>
                 <label className="space-y-1"><span className={lbl}>Duration (min)</span>
-                  <input type="number" min={5} className={input} defaultValue={t.durationMin} onBlur={(e) => saveBookingTypeOverride(t.id, { durationMin: Number(e.target.value) || t.durationMin })} /></label>
+                  <input type="number" min={5} className={input} value={t.durationMin} onChange={(e) => patch(i, { durationMin: Number(e.target.value) })} /></label>
               </div>
               <label className="mt-3 block space-y-1"><span className={lbl}>Fee label (what clients see)</span>
-                <input className={input} defaultValue={t.feeLabel} onBlur={(e) => saveBookingTypeOverride(t.id, { feeLabel: e.target.value })} placeholder="e.g. ₱2,500 — payable after confirmation" /></label>
+                <input className={input} value={t.feeLabel} onChange={(e) => patch(i, { feeLabel: e.target.value })} placeholder="e.g. ₱2,500 — payable after confirmation" /></label>
               <label className="mt-3 block space-y-1"><span className={lbl}>Description</span>
-                <textarea rows={2} className={input} defaultValue={t.description} onBlur={(e) => saveBookingTypeOverride(t.id, { description: e.target.value })} /></label>
-              <div className="mt-3 flex items-center justify-between">
+                <textarea rows={2} className={input} value={t.description} onChange={(e) => patch(i, { description: e.target.value })} /></label>
+              <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
                 <label className="flex items-center gap-2 text-sm text-ink-soft">
-                  <input type="checkbox" checked={t.active} onChange={(e) => saveBookingTypeOverride(t.id, { active: e.target.checked })} className="h-4 w-4 rounded border-firefly/40 text-forest focus:ring-firefly" />
+                  <input type="checkbox" checked={t.active} onChange={(e) => patch(i, { active: e.target.checked })} className="h-4 w-4 rounded border-firefly/40 text-forest focus:ring-firefly" />
                   Shown on the booking page
                 </label>
-                <button onClick={() => { if (confirm(`Remove "${t.name}"?`)) removeBookingType(t.id); }} className="text-xs font-semibold text-rose-600 hover:underline">Remove</button>
+                <label className="flex items-center gap-2 text-sm text-ink-soft">
+                  <input type="checkbox" checked={t.showFee !== false} onChange={(e) => patch(i, { showFee: e.target.checked })} className="h-4 w-4 rounded border-firefly/40 text-forest focus:ring-firefly" />
+                  Show the price
+                </label>
+                <button onClick={() => remove(t.id, t.name)} className="ml-auto text-xs font-semibold text-rose-600 hover:underline">Remove</button>
               </div>
             </div>
           ))}
@@ -295,6 +313,12 @@ function BookingTypesManager({ onClose }: { onClose: () => void }) {
         ) : (
           <button onClick={() => setAdding(true)} className="btn-ghost mt-4 !py-2 text-xs">+ Add booking type</button>
         )}
+
+        <div className="mt-5 flex items-center justify-end gap-3 border-t border-firefly/15 pt-4">
+          {savedNote && <span className="text-xs font-semibold text-emerald-700">✓ Saved</span>}
+          <button onClick={onClose} className="btn-ghost !py-2 text-xs">Close</button>
+          <button onClick={saveAll} className="btn-primary !py-2 text-xs">💾 Save changes</button>
+        </div>
       </div>
     </div>
   );

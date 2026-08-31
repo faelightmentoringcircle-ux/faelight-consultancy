@@ -36,6 +36,7 @@ export interface BookingType {
   description: string;
   feeLabel: string;
   active: boolean;
+  showFee?: boolean; // whether the fee label is shown publicly (default true)
 }
 
 export interface TeamMember {
