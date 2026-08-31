@@ -47,14 +47,14 @@ export function HomeHero() {
             )}
           </div>
 
-          {/* Floating brand mark */}
-          <div className="relative flex items-center justify-center animate-fadeUp">
+          {/* Full brand logo — emblem + wordmark, shown complete */}
+          <div className="relative flex items-center justify-center overflow-visible animate-fadeUp">
             <Glow className="left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" color="rgba(230,183,82,0.35)" size={520} />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/brand/logo-mark.png"
-              alt="Faelight"
-              className="relative animate-floatSlow h-64 w-auto drop-shadow-[0_18px_60px_rgba(230,183,82,0.45)] sm:h-80 lg:h-[26rem]"
+              src="/brand/logo-full-light.png"
+              alt="Faelight Business Consultancy"
+              className="relative animate-floatSlow h-auto w-auto max-h-[24rem] max-w-full object-contain drop-shadow-[0_18px_60px_rgba(230,183,82,0.45)] sm:max-h-[26rem] lg:max-h-[30rem]"
             />
           </div>
         </div>

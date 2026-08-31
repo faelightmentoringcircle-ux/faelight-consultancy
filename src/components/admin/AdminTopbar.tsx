@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { logout, AdminUser } from "@/lib/auth";
+import { logout, isSupabaseAuth, AdminUser } from "@/lib/auth";
 import {
   resetDemo,
   getNotifications,
@@ -180,12 +180,15 @@ export function AdminTopbar({ user, title, onMenu }: { user: AdminUser; title: s
                   <p className="text-[10px] uppercase tracking-wide text-firefly-deep">{user.role === "admin" ? "Admin" : "Team"}</p>
                 </div>
                 <Link href="/" className="mt-1 block rounded-lg px-3 py-2 text-sm text-ink-soft transition hover:bg-firefly/8">View site ↗</Link>
-                <button
-                  onClick={() => { if (confirm("Reset all demo data (leads, bookings, notes, settings)?")) resetDemo(); }}
-                  className="block w-full rounded-lg px-3 py-2 text-left text-sm text-ink-soft transition hover:bg-firefly/8"
-                >
-                  ↺ Reset demo data
-                </button>
+                {/* Demo-only: never show in production (Supabase) — it would wipe shared data. */}
+                {!isSupabaseAuth() && (
+                  <button
+                    onClick={() => { if (confirm("Reset all demo data (leads, bookings, notes, settings)?")) resetDemo(); }}
+                    className="block w-full rounded-lg px-3 py-2 text-left text-sm text-ink-soft transition hover:bg-firefly/8"
+                  >
+                    ↺ Reset demo data
+                  </button>
+                )}
                 <button onClick={() => logout()} className="mt-1 block w-full rounded-lg bg-forest px-3 py-2 text-left text-sm font-semibold text-parchment transition hover:bg-forest-deep">
                   Sign out
                 </button>
