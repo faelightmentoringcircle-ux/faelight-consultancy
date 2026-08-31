@@ -4,8 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   getBookings, updateBooking, onStoreChange, Booking, BookingStatus, PaymentStatus,
+  getBookingTypes, saveBookingTypeOverride, addBookingType, removeBookingType,
 } from "@/lib/store";
-import { BOOKING_TYPES } from "@/lib/content";
+import { BookingType } from "@/lib/content";
 import { formatDate, formatTime, relativeDay, peso } from "@/lib/format";
 import { AdminHeader, Panel, StatTile, BookingBadge, PaymentBadge } from "@/components/admin/ui";
 
@@ -18,7 +19,7 @@ function parseFee(label?: string): number {
   return m ? Number(m[1]) : 0;
 }
 function bookingFeeLabel(b: Booking): string {
-  return b.feeLabel ?? BOOKING_TYPES.find((t) => t.id === b.bookingTypeId)?.feeLabel ?? "—";
+  return b.feeLabel ?? getBookingTypes(true).find((t) => t.id === b.bookingTypeId)?.feeLabel ?? "—";
 }
 function payStatus(b: Booking): PaymentStatus {
   return b.paymentStatus ?? "unpaid";
@@ -28,6 +29,7 @@ export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [tab, setTab] = useState<"upcoming" | "past" | "all">("upcoming");
   const [payFilter, setPayFilter] = useState<null | "paid" | "unpaid">(null);
+  const [manageTypes, setManageTypes] = useState(false);
 
   useEffect(() => {
     const sync = () => setBookings(getBookings());
@@ -96,7 +98,9 @@ export default function BookingsPage() {
 
   return (
     <>
-      <AdminHeader title="Bookings" subtitle={`${upcomingCount} upcoming · ${bookings.length} total`} />
+      <AdminHeader title="Bookings" subtitle={`${upcomingCount} upcoming · ${bookings.length} total`}
+        action={<button onClick={() => setManageTypes(true)} className="btn-ghost !py-2 text-xs">⚙ Manage booking types</button>} />
+      {manageTypes && <BookingTypesManager onClose={() => setManageTypes(false)} />}
 
       {/* Payments summary — click a tile to filter the list below */}
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
@@ -215,5 +219,83 @@ export default function BookingsPage() {
         see are set in <Link href="/admin/settings" className="text-firefly-deep hover:underline">Settings</Link>.
       </p>
     </>
+  );
+}
+
+// --- Manage booking types (discovery call etc.) — edit name/duration/fee ----
+function BookingTypesManager({ onClose }: { onClose: () => void }) {
+  const [types, setTypes] = useState<BookingType[]>([]);
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState({ name: "", durationMin: 60, feeLabel: "", description: "" });
+
+  useEffect(() => {
+    const sync = () => setTypes(getBookingTypes(true)); // include inactive so admin sees all
+    sync();
+    return onStoreChange(sync);
+  }, []);
+
+  const input = "w-full rounded-lg border border-firefly/25 bg-white px-3 py-2 text-sm outline-none focus:border-firefly";
+  const lbl = "block text-[10px] font-semibold uppercase tracking-wide text-ink-faint";
+
+  function addType() {
+    if (!draft.name.trim()) return;
+    addBookingType({ name: draft.name.trim(), durationMin: Number(draft.durationMin) || 60, feeLabel: draft.feeLabel.trim() || "Fee on request", description: draft.description.trim(), active: true });
+    setDraft({ name: "", durationMin: 60, feeLabel: "", description: "" });
+    setAdding(false);
+  }
+
+  return (
+    <div className="fixed inset-0 z-[85] flex items-start justify-center overflow-y-auto bg-forest-deep/50 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="my-8 w-full max-w-2xl rounded-2xl border border-firefly/25 bg-parchment-card p-6 shadow-card" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-serif text-xl text-forest-deep">Manage Booking Types</h2>
+            <p className="text-[11px] text-ink-faint">Edits show live on the public “Book a Discovery Call” page.</p>
+          </div>
+          <button onClick={onClose} className="text-xl text-ink-faint hover:text-forest">✕</button>
+        </div>
+
+        <div className="mt-4 space-y-3">
+          {types.map((t) => (
+            <div key={t.id} className="rounded-xl border border-firefly/15 bg-white/60 p-4">
+              <div className="grid gap-3 sm:grid-cols-[1fr,110px]">
+                <label className="space-y-1"><span className={lbl}>Name</span>
+                  <input className={input} defaultValue={t.name} onBlur={(e) => saveBookingTypeOverride(t.id, { name: e.target.value })} /></label>
+                <label className="space-y-1"><span className={lbl}>Duration (min)</span>
+                  <input type="number" min={5} className={input} defaultValue={t.durationMin} onBlur={(e) => saveBookingTypeOverride(t.id, { durationMin: Number(e.target.value) || t.durationMin })} /></label>
+              </div>
+              <label className="mt-3 block space-y-1"><span className={lbl}>Fee label (what clients see)</span>
+                <input className={input} defaultValue={t.feeLabel} onBlur={(e) => saveBookingTypeOverride(t.id, { feeLabel: e.target.value })} placeholder="e.g. ₱2,500 — payable after confirmation" /></label>
+              <label className="mt-3 block space-y-1"><span className={lbl}>Description</span>
+                <textarea rows={2} className={input} defaultValue={t.description} onBlur={(e) => saveBookingTypeOverride(t.id, { description: e.target.value })} /></label>
+              <div className="mt-3 flex items-center justify-between">
+                <label className="flex items-center gap-2 text-sm text-ink-soft">
+                  <input type="checkbox" checked={t.active} onChange={(e) => saveBookingTypeOverride(t.id, { active: e.target.checked })} className="h-4 w-4 rounded border-firefly/40 text-forest focus:ring-firefly" />
+                  Shown on the booking page
+                </label>
+                <button onClick={() => { if (confirm(`Remove "${t.name}"?`)) removeBookingType(t.id); }} className="text-xs font-semibold text-rose-600 hover:underline">Remove</button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {adding ? (
+          <div className="mt-4 rounded-xl border border-firefly/25 bg-firefly/5 p-4">
+            <div className="grid gap-3 sm:grid-cols-[1fr,110px]">
+              <label className="space-y-1"><span className={lbl}>Name</span><input className={input} value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} /></label>
+              <label className="space-y-1"><span className={lbl}>Duration (min)</span><input type="number" className={input} value={draft.durationMin} onChange={(e) => setDraft((d) => ({ ...d, durationMin: Number(e.target.value) }))} /></label>
+            </div>
+            <label className="mt-3 block space-y-1"><span className={lbl}>Fee label</span><input className={input} value={draft.feeLabel} onChange={(e) => setDraft((d) => ({ ...d, feeLabel: e.target.value }))} placeholder="e.g. ₱2,500 — payable after confirmation" /></label>
+            <label className="mt-3 block space-y-1"><span className={lbl}>Description</span><textarea rows={2} className={input} value={draft.description} onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))} /></label>
+            <div className="mt-3 flex justify-end gap-2">
+              <button onClick={() => setAdding(false)} className="btn-ghost !py-2 text-xs">Cancel</button>
+              <button onClick={addType} disabled={!draft.name.trim()} className="btn-primary !py-2 text-xs disabled:opacity-50">Add type</button>
+            </div>
+          </div>
+        ) : (
+          <button onClick={() => setAdding(true)} className="btn-ghost mt-4 !py-2 text-xs">+ Add booking type</button>
+        )}
+      </div>
+    </div>
   );
 }

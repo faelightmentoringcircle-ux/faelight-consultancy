@@ -5,7 +5,7 @@
 // =====================================================================
 "use client";
 
-import { CategorySlug, SessionItem, SessionPromo, SessionDay, SESSIONS, Service, SERVICES, offeringKind } from "./content";
+import { CategorySlug, SessionItem, SessionPromo, SessionDay, SESSIONS, Service, SERVICES, offeringKind, BookingType, BOOKING_TYPES } from "./content";
 import { pushKey } from "./sync";
 import { POOL_SEED } from "./poolData";
 import { CLIENT_SEED } from "./clientData";
@@ -174,6 +174,8 @@ const KEYS = {
   documents: "fae.documents.v1",
   paymentTerms: "fae.paymentterms.v1",
   invoiceParticulars: "fae.invoiceparticulars.v1",
+  bookingTypes: "fae.bookingtypes.v1",
+  bookingTypesCustom: "fae.bookingtypescustom.v1",
   activity: "fae.activity.v1",
   notifRead: "fae.notifread.v1",
   customServices: "fae.customservices.v1",
@@ -1239,6 +1241,52 @@ export function renderInvoiceParticulars(tpl: string, d: DocRecord): string {
     .replace(/\{\{\s*amount_due\s*\}\}/gi, formatPeso(invoiceTotal(d)))
     .replace(/\{\{\s*invoice_no\s*\}\}/gi, d.invoiceNo || "")
     .replace(/\{\{\s*date\s*\}\}/gi, d.invoiceDate || "");
+}
+
+// --- Booking types (discovery call etc.) — editable from admin -------------
+export interface BookingTypeOverride {
+  name?: string; durationMin?: number; feeLabel?: string; description?: string;
+  active?: boolean; deleted?: boolean;
+}
+export function getBookingTypeOverrides(): Record<string, BookingTypeOverride> {
+  return read<Record<string, BookingTypeOverride>>(KEYS.bookingTypes, {});
+}
+export function saveBookingTypeOverride(id: string, patch: BookingTypeOverride) {
+  const all = getBookingTypeOverrides();
+  write(KEYS.bookingTypes, { ...all, [id]: { ...all[id], ...patch } });
+}
+export function getCustomBookingTypes(): BookingType[] {
+  return read<BookingType[]>(KEYS.bookingTypesCustom, []);
+}
+export function addBookingType(input: Omit<BookingType, "id">): BookingType {
+  const bt: BookingType = { ...input, id: uid("bt-c") };
+  write(KEYS.bookingTypesCustom, [...getCustomBookingTypes(), bt]);
+  return bt;
+}
+export function removeBookingType(id: string) {
+  if (getCustomBookingTypes().some((b) => b.id === id)) {
+    write(KEYS.bookingTypesCustom, getCustomBookingTypes().filter((b) => b.id !== id));
+  } else {
+    saveBookingTypeOverride(id, { deleted: true });
+  }
+}
+/** Effective booking types = seed + custom, with admin edits applied, minus deleted. */
+export function getBookingTypes(includeInactive = false): BookingType[] {
+  const ov = getBookingTypeOverrides();
+  return [...BOOKING_TYPES, ...getCustomBookingTypes()]
+    .filter((b) => !ov[b.id]?.deleted)
+    .map((b) => {
+      const o = ov[b.id] ?? {};
+      return {
+        ...b,
+        name: o.name ?? b.name,
+        durationMin: o.durationMin ?? b.durationMin,
+        feeLabel: o.feeLabel ?? b.feeLabel,
+        description: o.description ?? b.description,
+        active: o.active ?? b.active,
+      };
+    })
+    .filter((b) => includeInactive || b.active);
 }
 
 /** Create a fresh invoice draft with one blank line item, ready to edit. */

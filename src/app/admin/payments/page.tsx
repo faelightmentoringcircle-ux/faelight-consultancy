@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { getBookings, updateBooking, getSettings, saveSettings, onStoreChange, Booking, PaymentStatus, Settings } from "@/lib/store";
-import { BOOKING_TYPES } from "@/lib/content";
+import { getBookingTypes } from "@/lib/store";
 import { formatDate, relativeDay, peso } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 import { AdminHeader, Panel, StatTile, PaymentBadge } from "@/components/admin/ui";
@@ -14,7 +14,7 @@ function parseFee(label?: string): number {
   return m ? Number(m[1]) : 0;
 }
 function feeLabel(b: Booking): string {
-  return b.feeLabel ?? BOOKING_TYPES.find((t) => t.id === b.bookingTypeId)?.feeLabel ?? "—";
+  return b.feeLabel ?? getBookingTypes(true).find((t) => t.id === b.bookingTypeId)?.feeLabel ?? "—";
 }
 function payStatus(b: Booking): PaymentStatus {
   return b.paymentStatus ?? "unpaid";

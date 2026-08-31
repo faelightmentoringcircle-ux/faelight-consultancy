@@ -2,15 +2,17 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { BOOKING_TYPES } from "@/lib/content";
+import { BookingType } from "@/lib/content";
 import {
   getSettings,
   getBookings,
   getEvents,
+  getBookingTypes,
   addBooking,
   addLead,
   updateBooking,
   calendarReady,
+  onStoreChange,
   ymd,
   Settings,
   Booking,
@@ -55,14 +57,20 @@ export default function BookPage() {
   const [confirmed, setConfirmed] = useState<Booking | null>(null);
   const [raceError, setRaceError] = useState(false);
 
+  const [bookingTypes, setBookingTypes] = useState<BookingType[]>([]);
   useEffect(() => {
-    setSettings(getSettings());
-    setBookings(getBookings());
-    setEvents(getEvents());
+    const sync = () => {
+      setSettings(getSettings());
+      setBookings(getBookings());
+      setEvents(getEvents());
+      setBookingTypes(getBookingTypes());
+    };
+    sync();
     setMounted(true);
+    return onStoreChange(sync);
   }, []);
 
-  const bookingType = BOOKING_TYPES.find((b) => b.id === typeId);
+  const bookingType = bookingTypes.find((b) => b.id === typeId);
   const duration = bookingType?.durationMin ?? 60;
 
   const slots = useMemo(() => {
@@ -157,7 +165,7 @@ export default function BookPage() {
           {/* STEP 1 — booking type */}
           {step === 1 && (
             <div className="grid gap-4 sm:grid-cols-3">
-              {BOOKING_TYPES.map((bt) => (
+              {bookingTypes.map((bt) => (
                 <button
                   key={bt.id}
                   onClick={() => { setTypeId(bt.id); setStep(2); }}
@@ -478,7 +486,7 @@ function DatePicker({
 function SummaryCard({
   bookingType, slot, full = false, details, confLabel = "Video call",
 }: {
-  bookingType: (typeof BOOKING_TYPES)[number];
+  bookingType: BookingType;
   slot: Slot;
   full?: boolean;
   details?: { name: string; email: string; phone: string; agenda: string };
