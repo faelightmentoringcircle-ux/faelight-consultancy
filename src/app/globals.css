@@ -1,0 +1,129 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --parchment: #faf6ec;
+  --ink: #26221c;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--parchment);
+  color: var(--ink);
+  font-feature-settings: "liga" 1, "calt" 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Refined serif headings pick up a subtle optical warmth */
+.font-serif {
+  font-optical-sizing: auto;
+}
+
+@layer components {
+  .container-fae {
+    @apply mx-auto w-full max-w-6xl px-5 sm:px-8;
+  }
+
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-eyebrow text-firefly-deep;
+  }
+
+  .eyebrow-light {
+    @apply inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-eyebrow text-firefly-bright;
+  }
+
+  /* Buttons -------------------------------------------------------- */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-firefly focus-visible:ring-offset-2;
+  }
+  .btn-primary {
+    @apply btn bg-forest text-parchment shadow-card hover:bg-forest-deep hover:shadow-glow;
+  }
+  .btn-gold {
+    @apply btn bg-firefly font-semibold text-forest-deep shadow-glow-sm ring-1 ring-firefly/40 hover:bg-firefly-bright hover:shadow-glow;
+  }
+  .btn-ghost {
+    @apply btn border border-forest/25 bg-transparent text-forest hover:border-firefly hover:text-forest-deep;
+  }
+  .btn-ghost-light {
+    @apply btn border border-parchment/30 bg-white/5 text-parchment backdrop-blur hover:border-firefly hover:text-firefly-bright;
+  }
+
+  /* Cards ---------------------------------------------------------- */
+  .card {
+    @apply rounded-2xl border border-firefly/20 bg-parchment-card p-6 shadow-card transition-all duration-300;
+  }
+  .card-hover {
+    @apply card hover:-translate-y-1 hover:border-firefly/60 hover:shadow-glow;
+  }
+
+  .hairline {
+    @apply border-t border-firefly/25;
+  }
+
+  .section {
+    @apply py-16 sm:py-24;
+  }
+
+  .link-underline {
+    @apply relative after:absolute after:-bottom-0.5 after:left-0 after:h-px after:w-0 after:bg-firefly after:transition-all after:duration-300 hover:after:w-full;
+  }
+}
+
+/* Twinkle star field for enchanted sections */
+.starfield::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 20% 30%, rgba(244,212,136,0.9), transparent),
+    radial-gradient(1px 1px at 60% 20%, rgba(244,212,136,0.7), transparent),
+    radial-gradient(1.5px 1.5px at 80% 60%, rgba(244,212,136,0.8), transparent),
+    radial-gradient(1px 1px at 35% 75%, rgba(244,212,136,0.6), transparent),
+    radial-gradient(1px 1px at 90% 40%, rgba(244,212,136,0.7), transparent),
+    radial-gradient(1.5px 1.5px at 10% 60%, rgba(244,212,136,0.5), transparent);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ------- Print styles: turn brochure pages into clean A4 --------- */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .print-page {
+    page-break-after: always;
+  }
+  .card,
+  .card-hover {
+    box-shadow: none !important;
+    border: 1px solid #cbb26a !important;
+    break-inside: avoid;
+  }
+  a[href]::after {
+    content: "";
+  }
+  @page {
+    size: A4;
+    margin: 16mm;
+  }
+}

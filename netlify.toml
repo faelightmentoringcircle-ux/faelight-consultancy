@@ -1,0 +1,5 @@
+# Netlify config — for when you connect this repo to Netlify (Git deploy).
+# For drag-and-drop: just run `npm run build` and drop the `out/` folder.
+[build]
+  command = "npm run build"
+  publish = "out"
