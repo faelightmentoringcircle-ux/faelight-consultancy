@@ -26,6 +26,9 @@ export const DEMO_PASSWORD = "faelight-demo";
 // accounts created from Settings → Team accounts persist in localStorage.
 // In production this is the Supabase `profiles` table.
 export const SEED_USERS: AdminUser[] = [
+  // Founder / owner accounts — always full admin (matched by their real login email).
+  { id: "u-fael-owner", name: "Faelight", email: "faelightmentoringcircle@gmail.com", role: "admin", title: "Owner / Admin" },
+  { id: "u-berly-owner", name: "Berly", email: "villanueva.berlyd@gmail.com", role: "admin", title: "Systems & Process Lead" },
   { id: "u-maia", name: "Maia Castañeda", email: "maia@faelight.ph", role: "admin", title: "Founder" },
   { id: "u-berly", name: "Berly", email: "berly@faelight.ph", role: "admin", title: "Systems & Process Lead" },
   { id: "u-owner", name: "Owner", email: "owner@faelight.ph", role: "admin", title: "Owner / Admin" },
