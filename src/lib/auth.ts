@@ -227,9 +227,20 @@ export async function signInWithEmail(email: string, password: string): Promise<
 function applySupabaseSession(email: string | null | undefined) {
   if (email) {
     const lower = email.toLowerCase();
-    let u = getAllUsers().find((x) => x.email.toLowerCase() === lower);
+    const users = getAllUsers();
+    let u = users.find((x) => x.email.toLowerCase() === lower);
     if (!u) {
-      u = addUser({ name: email.split("@")[0], email: lower, title: "Admin", role: "admin" });
+      // New person: default to a limited "team" account (an admin can promote
+      // them in Settings). If somehow no admin exists yet, make them admin so
+      // nobody is ever locked out.
+      const hasAdmin = users.some((x) => x.role === "admin");
+      const role: Role = hasAdmin ? "team" : "admin";
+      u = addUser({
+        name: email.split("@")[0].replace(/[._]/g, " "),
+        email: lower,
+        title: role === "admin" ? "Admin" : "Team Member",
+        role,
+      });
     }
     localStorage.setItem(KEY, JSON.stringify(u.id));
   } else {
