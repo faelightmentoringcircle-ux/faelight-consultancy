@@ -27,13 +27,6 @@ export function HomeHero() {
         <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
           {/* Copy */}
           <div className="animate-fadeUp">
-            {/* Front-page brand logo */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/brand/logo-full-light.png"
-              alt="Faelight Business Consultancy"
-              className="mb-6 h-24 w-auto drop-shadow-[0_6px_24px_rgba(230,183,82,0.35)] sm:h-28 lg:h-32"
-            />
             <Eyebrow light>{c.eyebrow}</Eyebrow>
             <h1 className="mt-4 font-serif text-3xl leading-[1.12] sm:text-4xl lg:text-5xl">
               {c.titleLine1}
