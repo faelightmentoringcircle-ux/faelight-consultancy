@@ -12,6 +12,7 @@ import {
   moduleLevel,
   isSupabaseAuth,
   signInWithEmail,
+  sendPasswordReset,
   AdminUser,
 } from "@/lib/auth";
 import { AdminTopbar } from "./AdminTopbar";
@@ -249,12 +250,14 @@ function LoginScreen() {
   return <DemoLoginScreen />;
 }
 
-// Real email + password login (Supabase Auth).
+// Real email + password login (Supabase Auth) with Forgot-password flow.
 function SupabaseLoginScreen() {
+  const [mode, setMode] = useState<"login" | "reset">("login");
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [sent, setSent] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -265,6 +268,19 @@ function SupabaseLoginScreen() {
     if (!res.ok) setError(res.error || "Sign in failed.");
     // success: onAuthStateChange resolves the account and the app re-renders.
   }
+
+  async function submitReset(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setBusy(true); setError("");
+    const res = await sendPasswordReset(email);
+    setBusy(false);
+    if (!res.ok) { setError(res.error || "Couldn't send the reset link."); return; }
+    setSent(true);
+  }
+
+  const input = "w-full rounded-xl border border-parchment/20 bg-white/10 px-4 py-2.5 text-sm text-parchment placeholder:text-parchment/40 outline-none focus:border-firefly";
+  const lbl = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-firefly-bright/80";
 
   return (
     <div className="relative grid min-h-dvh place-items-center overflow-hidden bg-enchanted p-6 text-parchment">
@@ -277,29 +293,48 @@ function SupabaseLoginScreen() {
           <h1 className="mt-3 font-serif text-3xl">Faelight Admin</h1>
           <p className="mt-1 text-sm text-parchment/60">People first. Systems second. Magic throughout.</p>
         </div>
-        <form onSubmit={submit} className="rounded-2xl border border-firefly/20 bg-white/5 p-6 backdrop-blur">
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-firefly-bright/80">Email</label>
-          <input
-            type="email" value={email} autoFocus
-            onChange={(e) => { setEmail(e.target.value); setError(""); }}
-            placeholder="you@faelight.ph"
-            className="w-full rounded-xl border border-parchment/20 bg-white/10 px-4 py-2.5 text-sm text-parchment placeholder:text-parchment/40 outline-none focus:border-firefly"
-          />
-          <label className="mb-1.5 mt-4 block text-xs font-semibold uppercase tracking-wide text-firefly-bright/80">Password</label>
-          <input
-            type="password" value={pw}
-            onChange={(e) => { setPw(e.target.value); setError(""); }}
-            placeholder="Your password"
-            className="w-full rounded-xl border border-parchment/20 bg-white/10 px-4 py-2.5 text-sm text-parchment placeholder:text-parchment/40 outline-none focus:border-firefly"
-          />
-          {error && <p className="mt-2 text-xs text-firefly-bright">{error}</p>}
-          <button type="submit" disabled={busy || !email.trim() || !pw} className="btn-gold mt-5 w-full disabled:cursor-not-allowed disabled:opacity-40">
-            {busy ? "Signing in…" : "Sign in"}
-          </button>
-          <p className="mt-4 text-center text-[11px] text-parchment/50">
-            Accounts are created in Supabase → Authentication. Ask an admin if you need access.
-          </p>
-        </form>
+
+        {mode === "login" ? (
+          <form onSubmit={submit} className="rounded-2xl border border-firefly/20 bg-white/5 p-6 backdrop-blur">
+            <label htmlFor="fae-email" className={lbl}>Email</label>
+            <input id="fae-email" name="email" type="email" autoComplete="username" value={email} autoFocus
+              onChange={(e) => { setEmail(e.target.value); setError(""); }} placeholder="you@faelight.ph" className={input} />
+            <div className="mb-1.5 mt-4 flex items-center justify-between">
+              <label htmlFor="fae-pw" className={lbl + " mb-0"}>Password</label>
+              <button type="button" onClick={() => { setMode("reset"); setError(""); setSent(false); }} className="text-[11px] font-semibold text-firefly-bright/90 hover:text-firefly-bright">Forgot password?</button>
+            </div>
+            <input id="fae-pw" name="password" type="password" autoComplete="current-password" value={pw}
+              onChange={(e) => { setPw(e.target.value); setError(""); }} placeholder="Your password" className={input} />
+            {error && <p className="mt-2 text-xs text-firefly-bright">{error}</p>}
+            <button type="submit" disabled={busy || !email.trim() || !pw} className="btn-gold mt-5 w-full disabled:cursor-not-allowed disabled:opacity-40">
+              {busy ? "Signing in…" : "Sign in"}
+            </button>
+            <p className="mt-4 text-center text-[11px] text-parchment/50">
+              Accounts are created in Supabase → Authentication. Ask an admin if you need access.
+            </p>
+          </form>
+        ) : sent ? (
+          <div className="rounded-2xl border border-firefly/20 bg-white/5 p-6 text-center backdrop-blur">
+            <p className="text-2xl">✉️</p>
+            <h2 className="mt-2 font-serif text-xl">Check your email</h2>
+            <p className="mt-2 text-sm text-parchment/70">If an account exists for <span className="text-firefly-bright">{email}</span>, a password-reset link is on its way. Open it to set a new password.</p>
+            <button onClick={() => { setMode("login"); setSent(false); }} className="btn-ghost-light mt-5">← Back to sign in</button>
+          </div>
+        ) : (
+          <form onSubmit={submitReset} className="rounded-2xl border border-firefly/20 bg-white/5 p-6 backdrop-blur">
+            <h2 className="mb-1 font-serif text-lg">Reset your password</h2>
+            <p className="mb-4 text-xs text-parchment/60">Enter your account email and we&rsquo;ll send you a reset link.</p>
+            <label htmlFor="fae-reset-email" className={lbl}>Email</label>
+            <input id="fae-reset-email" name="email" type="email" autoComplete="username" value={email} autoFocus
+              onChange={(e) => { setEmail(e.target.value); setError(""); }} placeholder="you@faelight.ph" className={input} />
+            {error && <p className="mt-2 text-xs text-firefly-bright">{error}</p>}
+            <button type="submit" disabled={busy || !email.trim()} className="btn-gold mt-5 w-full disabled:cursor-not-allowed disabled:opacity-40">
+              {busy ? "Sending…" : "Send reset link"}
+            </button>
+            <button type="button" onClick={() => { setMode("login"); setError(""); }} className="mt-3 w-full text-center text-[11px] text-parchment/60 hover:text-firefly-bright">← Back to sign in</button>
+          </form>
+        )}
+
         <p className="mt-4 text-center text-xs text-parchment/50">
           <Link href="/" className="hover:text-firefly-bright">← Back to the public site</Link>
         </p>

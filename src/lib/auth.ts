@@ -225,6 +225,23 @@ export async function signInWithEmail(email: string, password: string): Promise<
   return { ok: true }; // onAuthStateChange resolves the account
 }
 
+/** Email a password-reset link. The link returns to /reset to set a new password. */
+export async function sendPasswordReset(email: string): Promise<{ ok: boolean; error?: string }> {
+  if (!supabase) return { ok: false, error: "Login isn't configured." };
+  const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/reset/` : undefined;
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+/** Set a new password (used on the reset page after clicking the email link). */
+export async function updatePassword(newPassword: string): Promise<{ ok: boolean; error?: string }> {
+  if (!supabase) return { ok: false, error: "Login isn't configured." };
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
 /** Map a Supabase session (by email) to a team account; auto-provision the
  *  first unknown user as an admin so nobody gets locked out. */
 function applySupabaseSession(email: string | null | undefined) {

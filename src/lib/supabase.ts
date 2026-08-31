@@ -13,7 +13,7 @@ const anon =
 export const supabase: SupabaseClient | null =
   url && anon
     ? createClient(url, anon, {
-        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
       })
     : null;
 
