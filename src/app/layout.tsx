@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
+import { AppBootstrap } from "@/components/AppBootstrap";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -61,7 +62,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
-      <body className="min-h-dvh font-sans antialiased">{children}</body>
+      <body className="min-h-dvh font-sans antialiased"><AppBootstrap />{children}</body>
     </html>
   );
 }

@@ -10,6 +10,8 @@ import {
   useAuth,
   canAccessModule,
   moduleLevel,
+  isSupabaseAuth,
+  signInWithEmail,
   AdminUser,
 } from "@/lib/auth";
 import { AdminTopbar } from "./AdminTopbar";
@@ -243,6 +245,70 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 }
 
 function LoginScreen() {
+  if (isSupabaseAuth()) return <SupabaseLoginScreen />;
+  return <DemoLoginScreen />;
+}
+
+// Real email + password login (Supabase Auth).
+function SupabaseLoginScreen() {
+  const [email, setEmail] = useState("");
+  const [pw, setPw] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim() || !pw) return;
+    setBusy(true); setError("");
+    const res = await signInWithEmail(email, pw);
+    setBusy(false);
+    if (!res.ok) setError(res.error || "Sign in failed.");
+    // success: onAuthStateChange resolves the account and the app re-renders.
+  }
+
+  return (
+    <div className="relative grid min-h-dvh place-items-center overflow-hidden bg-enchanted p-6 text-parchment">
+      <div className="pointer-events-none absolute -left-20 top-10 h-96 w-96 rounded-full bg-firefly/15 blur-3xl" />
+      <div className="pointer-events-none absolute -right-20 bottom-0 h-96 w-96 rounded-full bg-twilight-light/30 blur-3xl" />
+      <div className="relative z-10 w-full max-w-md">
+        <div className="mb-6 text-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/logo-mark.png" alt="Faelight" className="mx-auto h-16 w-auto" />
+          <h1 className="mt-3 font-serif text-3xl">Faelight Admin</h1>
+          <p className="mt-1 text-sm text-parchment/60">People first. Systems second. Magic throughout.</p>
+        </div>
+        <form onSubmit={submit} className="rounded-2xl border border-firefly/20 bg-white/5 p-6 backdrop-blur">
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-firefly-bright/80">Email</label>
+          <input
+            type="email" value={email} autoFocus
+            onChange={(e) => { setEmail(e.target.value); setError(""); }}
+            placeholder="you@faelight.ph"
+            className="w-full rounded-xl border border-parchment/20 bg-white/10 px-4 py-2.5 text-sm text-parchment placeholder:text-parchment/40 outline-none focus:border-firefly"
+          />
+          <label className="mb-1.5 mt-4 block text-xs font-semibold uppercase tracking-wide text-firefly-bright/80">Password</label>
+          <input
+            type="password" value={pw}
+            onChange={(e) => { setPw(e.target.value); setError(""); }}
+            placeholder="Your password"
+            className="w-full rounded-xl border border-parchment/20 bg-white/10 px-4 py-2.5 text-sm text-parchment placeholder:text-parchment/40 outline-none focus:border-firefly"
+          />
+          {error && <p className="mt-2 text-xs text-firefly-bright">{error}</p>}
+          <button type="submit" disabled={busy || !email.trim() || !pw} className="btn-gold mt-5 w-full disabled:cursor-not-allowed disabled:opacity-40">
+            {busy ? "Signing in…" : "Sign in"}
+          </button>
+          <p className="mt-4 text-center text-[11px] text-parchment/50">
+            Accounts are created in Supabase → Authentication. Ask an admin if you need access.
+          </p>
+        </form>
+        <p className="mt-4 text-center text-xs text-parchment/50">
+          <Link href="/" className="hover:text-firefly-bright">← Back to the public site</Link>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function DemoLoginScreen() {
   const [selected, setSelected] = useState<AdminUser | null>(null);
   const [pw, setPw] = useState("");
   const [error, setError] = useState("");

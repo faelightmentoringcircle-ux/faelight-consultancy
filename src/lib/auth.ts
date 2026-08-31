@@ -7,6 +7,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { supabase, isSupabaseEnabled } from "./supabase";
+import { pushKey, hydrateFromSupabase } from "./sync";
 
 export type Role = "admin" | "team";
 
@@ -51,6 +53,7 @@ function readCustomUsers(): AdminUser[] {
 }
 function writeCustomUsers(users: AdminUser[]) {
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  pushKey(USERS_KEY, users); // sync team accounts to Supabase
   window.dispatchEvent(new CustomEvent("fae:auth"));
 }
 
@@ -150,6 +153,7 @@ export function setUserModules(userId: string, modules: string[]) {
   const all = readAccess();
   all[userId] = modules;
   localStorage.setItem(ACCESS_KEY, JSON.stringify(all));
+  pushKey(ACCESS_KEY, all); // sync per-section access to Supabase
   window.dispatchEvent(new CustomEvent("fae:auth"));
 }
 /** A user's access level for a section: none / view / edit / admin. */
@@ -204,17 +208,64 @@ export function login(userId: string) {
 export function logout() {
   localStorage.removeItem(KEY);
   window.dispatchEvent(new CustomEvent("fae:auth"));
+  if (supabase) supabase.auth.signOut().catch(() => {});
 }
 
-// React hook — re-renders on login/logout.
+// --- Supabase Auth (real email + password login) ---------------------
+export const isSupabaseAuth = () => isSupabaseEnabled();
+
+/** Sign in with a real email + password (Supabase Auth). */
+export async function signInWithEmail(email: string, password: string): Promise<{ ok: boolean; error?: string }> {
+  if (!supabase) return { ok: false, error: "Login isn't configured." };
+  const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true }; // onAuthStateChange resolves the account
+}
+
+/** Map a Supabase session (by email) to a team account; auto-provision the
+ *  first unknown user as an admin so nobody gets locked out. */
+function applySupabaseSession(email: string | null | undefined) {
+  if (email) {
+    const lower = email.toLowerCase();
+    let u = getAllUsers().find((x) => x.email.toLowerCase() === lower);
+    if (!u) {
+      u = addUser({ name: email.split("@")[0], email: lower, title: "Admin", role: "admin" });
+    }
+    localStorage.setItem(KEY, JSON.stringify(u.id));
+  } else {
+    localStorage.removeItem(KEY);
+  }
+  window.dispatchEvent(new CustomEvent("fae:auth"));
+}
+
+let bootReady = false;
+export const isAuthBootReady = () => bootReady || !isSupabaseEnabled();
+
+/** Run once on app start: load shared data + resolve the Supabase session. */
+export async function bootstrapAuth() {
+  if (!supabase) { bootReady = true; window.dispatchEvent(new CustomEvent("fae:auth")); return; }
+  try {
+    await hydrateFromSupabase();
+    const { data } = await supabase.auth.getSession();
+    applySupabaseSession(data.session?.user?.email ?? null);
+    supabase.auth.onAuthStateChange((_event, session) => {
+      applySupabaseSession(session?.user?.email ?? null);
+    });
+  } catch (e) {
+    console.warn("[auth] bootstrap failed:", e);
+  }
+  bootReady = true;
+  window.dispatchEvent(new CustomEvent("fae:auth"));
+}
+
+// React hook — re-renders on login/logout and once the app has booted.
 export function useAuth() {
   const [user, setUser] = useState<AdminUser | null>(null);
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(!isSupabaseEnabled());
 
   useEffect(() => {
-    const sync = () => setUser(currentUser());
+    const sync = () => { setUser(currentUser()); setReady(isAuthBootReady()); };
     sync();
-    setReady(true);
     window.addEventListener("fae:auth", sync);
     window.addEventListener("storage", sync);
     return () => {

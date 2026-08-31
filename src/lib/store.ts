@@ -6,6 +6,7 @@
 "use client";
 
 import { CategorySlug, SessionItem, SessionPromo, SessionDay, SESSIONS, Service, SERVICES, offeringKind } from "./content";
+import { pushKey } from "./sync";
 import { POOL_SEED } from "./poolData";
 import { CLIENT_SEED } from "./clientData";
 
@@ -364,6 +365,7 @@ function read<T>(key: string, fallback: T): T {
 function write<T>(key: string, value: T) {
   if (typeof window === "undefined") return;
   localStorage.setItem(key, JSON.stringify(value));
+  pushKey(key, value); // sync to Supabase when configured (no-op otherwise)
   window.dispatchEvent(new CustomEvent("fae:store"));
 }
 
