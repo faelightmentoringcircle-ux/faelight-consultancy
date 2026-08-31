@@ -52,9 +52,9 @@ export function HomeHero() {
             <Glow className="left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" color="rgba(230,183,82,0.35)" size={520} />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/brand/logo-full-light.png"
+              src="/brand/logo-full.png"
               alt="Faelight Business Consultancy"
-              className="relative animate-floatSlow h-auto w-auto max-h-[24rem] max-w-full object-contain drop-shadow-[0_18px_60px_rgba(230,183,82,0.45)] sm:max-h-[26rem] lg:max-h-[30rem]"
+              className="relative animate-floatSlow h-auto w-auto max-h-[24rem] max-w-full object-contain drop-shadow-[0_10px_40px_rgba(230,183,82,0.35)] sm:max-h-[26rem] lg:max-h-[30rem]"
             />
           </div>
         </div>
