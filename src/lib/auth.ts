@@ -30,13 +30,13 @@ export const SEED_USERS: AdminUser[] = [
   { id: "u-fael-owner", name: "Faelight", email: "faelightmentoringcircle@gmail.com", role: "admin", title: "Owner / Admin" },
   { id: "u-berly-owner", name: "Berly", email: "villanueva.berlyd@gmail.com", role: "admin", title: "Systems & Process Lead" },
   { id: "u-maia", name: "Maia Castañeda", email: "maia@faelight.ph", role: "admin", title: "Founder" },
-  { id: "u-berly", name: "Berly", email: "berly@faelight.ph", role: "admin", title: "Systems & Process Lead" },
+  { id: "u-berly", name: "Berly", email: "eva.bdimalanta@gmail.com", role: "admin", title: "Systems & Process Lead" },
   { id: "u-owner", name: "Owner", email: "owner@faelight.ph", role: "admin", title: "Owner / Admin" },
   { id: "u-sassa", name: "Sassa", email: "sassa@faelight.ph", role: "admin", title: "Executive VA" },
   { id: "u-kenny", name: "Kenny", email: "kenny@faelight.ph", role: "team", title: "Operations" },
   { id: "u-kits", name: "Kits", email: "kits@faelight.ph", role: "team", title: "Marketing" },
   { id: "u-dor", name: "Dor", email: "dor@faelight.ph", role: "team", title: "Admin & Experiences" },
-  { id: "u-josh", name: "Josh", email: "josh@faelight.ph", role: "team", title: "SEO & Web" },
+  { id: "u-josh", name: "Josh", email: "jdimalanta030@gmail.com", role: "team", title: "SEO & Web" },
 ];
 
 const KEY = "fae.session.v1";
