@@ -5,7 +5,7 @@
 // =====================================================================
 "use client";
 
-import { CategorySlug, SessionItem, SessionPromo, SessionDay, SESSIONS, Service, SERVICES, offeringKind, BookingType, BOOKING_TYPES } from "./content";
+import { CategorySlug, SessionItem, SessionPromo, SessionDay, SESSIONS, Service, SERVICES, offeringKind, BookingType, BOOKING_TYPES, TeamMember, TEAM } from "./content";
 import { pushKey } from "./sync";
 import { POOL_SEED } from "./poolData";
 import { CLIENT_SEED } from "./clientData";
@@ -176,6 +176,8 @@ const KEYS = {
   invoiceParticulars: "fae.invoiceparticulars.v1",
   bookingTypes: "fae.bookingtypes.v1",
   bookingTypesCustom: "fae.bookingtypescustom.v1",
+  publicTeam: "fae.publicteam.v1",
+  publicTeamCustom: "fae.publicteamcustom.v1",
   activity: "fae.activity.v1",
   notifRead: "fae.notifread.v1",
   customServices: "fae.customservices.v1",
@@ -1288,6 +1290,74 @@ export function getBookingTypes(includeInactive = false): BookingType[] {
       };
     })
     .filter((b) => includeInactive || b.active);
+}
+
+// --- Public "About page" team (the "people behind the magic" section) ------
+// Editable from admin → Faelight Team → Website team. Seed = TEAM (content.ts);
+// admin edits are stored as overrides, plus any custom-added members, minus
+// deleted, ordered. Photos are stored as data URLs (or a URL/path).
+export interface PublicTeamOverride {
+  name?: string; role?: string; blurb?: string; photo?: string;
+  hidden?: boolean; deleted?: boolean; order?: number;
+}
+export interface EffectiveTeamMember extends TeamMember { hidden: boolean; order: number; }
+
+export function getPublicTeamOverrides(): Record<string, PublicTeamOverride> {
+  return read<Record<string, PublicTeamOverride>>(KEYS.publicTeam, {});
+}
+export function savePublicTeamMember(id: string, patch: PublicTeamOverride) {
+  const all = getPublicTeamOverrides();
+  write(KEYS.publicTeam, { ...all, [id]: { ...all[id], ...patch } });
+}
+export function getCustomPublicTeam(): TeamMember[] {
+  return read<TeamMember[]>(KEYS.publicTeamCustom, []);
+}
+export function addPublicTeamMember(input: Omit<TeamMember, "id">): TeamMember {
+  const m: TeamMember = { ...input, id: uid("tm-c") };
+  write(KEYS.publicTeamCustom, [...getCustomPublicTeam(), m]);
+  return m;
+}
+export function updatePublicTeamCustom(id: string, patch: Partial<TeamMember>) {
+  write(KEYS.publicTeamCustom, getCustomPublicTeam().map((m) => (m.id === id ? { ...m, ...patch } : m)));
+}
+export function removePublicTeamMember(id: string) {
+  if (getCustomPublicTeam().some((m) => m.id === id)) {
+    write(KEYS.publicTeamCustom, getCustomPublicTeam().filter((m) => m.id !== id));
+  } else {
+    savePublicTeamMember(id, { deleted: true });
+  }
+}
+export function isCustomTeamMember(id: string): boolean {
+  return getCustomPublicTeam().some((m) => m.id === id);
+}
+/** Effective public team = seed + custom, overrides applied, minus deleted,
+ *  ordered. Pass true to include hidden members (for the admin editor). */
+export function getEffectiveTeam(includeHidden = false): EffectiveTeamMember[] {
+  const ov = getPublicTeamOverrides();
+  const custom = getCustomPublicTeam();
+  const merged: EffectiveTeamMember[] = [...TEAM, ...custom]
+    .filter((m) => !ov[m.id]?.deleted)
+    .map((m, i) => {
+      const o = ov[m.id] ?? {};
+      return {
+        id: m.id,
+        name: o.name ?? m.name,
+        role: o.role ?? m.role,
+        blurb: o.blurb ?? m.blurb,
+        photo: o.photo ?? m.photo,
+        hidden: o.hidden ?? false,
+        order: o.order ?? i,
+      };
+    });
+  merged.sort((a, b) => a.order - b.order);
+  return includeHidden ? merged : merged.filter((m) => !m.hidden);
+}
+/** Persist a new display order (array of ids, top → bottom). */
+export function reorderPublicTeam(orderedIds: string[]) {
+  const all = getPublicTeamOverrides();
+  const next = { ...all };
+  orderedIds.forEach((id, i) => { next[id] = { ...next[id], order: i }; });
+  write(KEYS.publicTeam, next);
 }
 
 /** Create a fresh invoice draft with one blank line item, ready to edit. */

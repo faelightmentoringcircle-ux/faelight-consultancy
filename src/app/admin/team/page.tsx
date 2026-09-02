@@ -11,6 +11,7 @@ import {
   TeamMemberRecord,
 } from "@/lib/store";
 import { AdminHeader, Panel } from "@/components/admin/ui";
+import { WebsiteTeamEditor } from "@/components/admin/WebsiteTeamEditor";
 
 const input = "w-full rounded-xl border border-firefly/25 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-firefly";
 const lbl = "block text-[11px] font-semibold uppercase tracking-wide text-ink-faint";
@@ -57,16 +58,25 @@ export default function TeamPage() {
     <>
       <AdminHeader
         title="Faelight Team"
-        subtitle="The internal team directory — roles, departments and contact details."
-        action={
-          <div className="flex items-center gap-2">
-            <button onClick={() => setShowArchived((s) => !s)} className="btn-ghost !py-2 text-xs">
-              {showArchived ? `← Active (${activeCount})` : `Archived (${archivedCount})`}
-            </button>
-            <button onClick={openNew} className="btn-primary !py-2 text-xs">+ Add member</button>
-          </div>
-        }
+        subtitle="Manage the public About-page team, plus the internal directory below."
       />
+
+      {/* Public website team (the "people behind the magic" section) */}
+      <WebsiteTeamEditor />
+
+      {/* Internal team directory ------------------------------------------ */}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 className="font-serif text-lg text-forest-deep">📇 Internal team directory</h2>
+          <p className="text-xs text-ink-faint">Roles, departments and contact details (not shown on the public site).</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowArchived((s) => !s)} className="btn-ghost !py-2 text-xs">
+            {showArchived ? `← Active (${activeCount})` : `Archived (${archivedCount})`}
+          </button>
+          <button onClick={openNew} className="btn-primary !py-2 text-xs">+ Add member</button>
+        </div>
+      </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <input

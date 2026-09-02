@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CONTACT, FOUNDER, TEAM, PROJECT_TEAMS } from "@/lib/content";
-import { Eyebrow, Fireflies, Glow, Star, StarDivider } from "@/components/Motifs";
+import { CONTACT, FOUNDER, PROJECT_TEAMS } from "@/lib/content";
+import { Eyebrow, Fireflies, Glow, StarDivider } from "@/components/Motifs";
+import { AboutTeam } from "@/components/AboutTeam";
 import { CtaBand } from "@/components/Sections";
 import { AboutVideo } from "@/components/AboutVideo";
 
@@ -103,29 +104,7 @@ export default function AboutPage() {
               The people behind the magic
             </h2>
           </div>
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {TEAM.map((m) => (
-              <div key={m.id} className="card-hover flex items-start gap-4">
-                {m.photo ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={m.photo}
-                    alt={m.name}
-                    className="h-16 w-16 shrink-0 rounded-2xl object-cover shadow-card ring-1 ring-firefly/30"
-                  />
-                ) : (
-                  <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-twilight to-forest text-xl text-firefly-bright">
-                    <Star />
-                  </div>
-                )}
-                <div>
-                  <p className="font-serif text-lg text-forest-deep">{m.name}</p>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-firefly-deep">{m.role}</p>
-                  <p className="mt-2 text-sm text-ink-soft">{m.blurb}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          <AboutTeam />
         </div>
       </section>
 
