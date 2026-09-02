@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   getLead, updateLead, getNotes, addNote, getBookings, onStoreChange,
-  Lead, LeadNote, Booking, LEAD_STATUSES,
+  Lead, LeadNote, Booking, getLeadStatuses,
 } from "@/lib/store";
 import { SERVICES } from "@/lib/content";
 import { formatDateTime } from "@/lib/format";
@@ -27,12 +27,14 @@ function LeadDetail() {
   const [notes, setNotes] = useState<LeadNote[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [draft, setDraft] = useState("");
+  const [statuses, setStatuses] = useState<string[]>([]);
 
   useEffect(() => {
     const sync = () => {
       setLead(getLead(id));
       setNotes(getNotes(id));
       setBookings(getBookings().filter((b) => b.leadId === id));
+      setStatuses(getLeadStatuses());
     };
     sync();
     return onStoreChange(sync);
@@ -131,7 +133,7 @@ function LeadDetail() {
             <h2 className="font-serif text-lg text-forest-deep">Pipeline Status</h2>
             <p className="text-xs text-ink-faint">Move this lead along the pipeline.</p>
             <div className="mt-4 space-y-2">
-              {LEAD_STATUSES.map((s) => (
+              {statuses.map((s) => (
                 <button
                   key={s}
                   onClick={() => updateLead(id, { status: s })}

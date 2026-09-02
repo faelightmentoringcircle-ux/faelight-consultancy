@@ -13,15 +13,11 @@ import { CLIENT_SEED } from "./clientData";
 export type { SessionItem, SessionPromo, SessionDay };
 export { DEFAULT_REGISTER_FORM, DEFAULT_FEEDBACK_FORM, DAY_ICONS } from "./content";
 
-export type LeadStatus =
-  | "new"
-  | "contacted"
-  | "discovery booked"
-  | "proposal sent"
-  | "won"
-  | "lost";
-
-export const LEAD_STATUSES: LeadStatus[] = [
+// Lead statuses double as Kanban columns and are admin-editable (add / rename /
+// remove), so the type is an open string. DEFAULT_LEAD_STATUSES is the seed; the
+// live list lives in localStorage via getLeadStatuses().
+export type LeadStatus = string;
+export const DEFAULT_LEAD_STATUSES: string[] = [
   "new",
   "contacted",
   "discovery booked",
@@ -29,6 +25,7 @@ export const LEAD_STATUSES: LeadStatus[] = [
   "won",
   "lost",
 ];
+export const LEAD_STATUSES: string[] = DEFAULT_LEAD_STATUSES; // back-compat alias
 
 export type BookingStatus = "confirmed" | "completed" | "cancelled" | "no-show";
 // unpaid → submitted (client uploaded proof) → paid (verified by admin) / waived
@@ -160,6 +157,7 @@ const KEYS = {
   blog: "fae.blog.v1",
   taskStatuses: "fae.taskstatuses.v1",
   projectStatuses: "fae.projectstatuses.v1",
+  leadStatuses: "fae.leadstatuses.v1",
   brands: "fae.brands.v1",
   home: "fae.home.v1",
   pool: "fae.pool.v1",
@@ -1784,8 +1782,43 @@ export function updateLead(id: string, patch: Partial<Lead>) {
   );
 }
 
+export function removeLead(id: string) {
+  write(KEYS.leads, read<Lead[]>(KEYS.leads, []).filter((l) => l.id !== id));
+}
+
 export function getLead(id: string): Lead | undefined {
   return getLeads().find((l) => l.id === id);
+}
+
+// --- Lead statuses (Kanban columns) — admin-editable (add/rename/remove) ----
+export function getLeadStatuses(): string[] {
+  if (typeof window === "undefined") return [...DEFAULT_LEAD_STATUSES];
+  seedIfMissing(KEYS.leadStatuses, () => [...DEFAULT_LEAD_STATUSES]);
+  const list = read<string[]>(KEYS.leadStatuses, [...DEFAULT_LEAD_STATUSES]);
+  return list.length ? list : [...DEFAULT_LEAD_STATUSES];
+}
+export function setLeadStatuses(list: string[]) {
+  const clean = Array.from(new Set(list.map((s) => s.trim()).filter(Boolean)));
+  write(KEYS.leadStatuses, clean.length ? clean : [...DEFAULT_LEAD_STATUSES]);
+}
+export function addLeadStatus(name: string) {
+  const n = name.trim();
+  if (!n) return;
+  const cur = getLeadStatuses();
+  if (!cur.includes(n)) setLeadStatuses([...cur, n]);
+}
+export function renameLeadStatus(oldName: string, newName: string) {
+  const n = newName.trim();
+  if (!n) return;
+  setLeadStatuses(getLeadStatuses().map((s) => (s === oldName ? n : s)));
+  write(KEYS.leads, read<Lead[]>(KEYS.leads, []).map((l) => (l.status === oldName ? { ...l, status: n } : l)));
+}
+export function removeLeadStatus(name: string) {
+  const cur = getLeadStatuses();
+  if (cur.length <= 1) return;
+  const fallback = cur.find((s) => s !== name) ?? DEFAULT_LEAD_STATUSES[0];
+  setLeadStatuses(cur.filter((s) => s !== name));
+  write(KEYS.leads, read<Lead[]>(KEYS.leads, []).map((l) => (l.status === name ? { ...l, status: fallback } : l)));
 }
 
 // --- Notes -----------------------------------------------------------

@@ -9,7 +9,7 @@ import {
 import {
   getLeads, getBookings, getSettings, onStoreChange, calendarReady,
   CALENDAR_LABELS,
-  Lead, Booking, LEAD_STATUSES,
+  Lead, Booking, getLeadStatuses,
 } from "@/lib/store";
 import { CATEGORIES } from "@/lib/content";
 import { formatDateTime, relativeDay } from "@/lib/format";
@@ -27,6 +27,7 @@ export default function DashboardPage() {
   const [reconnect, setReconnect] = useState(false);
   const [providerLabel, setProviderLabel] = useState("");
   const [detail, setDetail] = useState<null | "newLeads" | "bookings" | "booked" | "won">(null);
+  const [leadStatuses, setLeadStatuses] = useState<string[]>([]);
 
   useEffect(() => {
     const sync = () => {
@@ -35,6 +36,7 @@ export default function DashboardPage() {
       const s = getSettings();
       setReconnect(!calendarReady(s));
       setProviderLabel(CALENDAR_LABELS[s.calendarProvider]);
+      setLeadStatuses(getLeadStatuses());
     };
     sync();
     return onStoreChange(sync);
@@ -65,7 +67,7 @@ export default function DashboardPage() {
   }).length;
 
   // Funnel counts
-  const funnel = LEAD_STATUSES.map((s) => ({
+  const funnel = leadStatuses.map((s) => ({
     status: s,
     count: rangeLeads.filter((l) => l.status === s).length,
   }));
