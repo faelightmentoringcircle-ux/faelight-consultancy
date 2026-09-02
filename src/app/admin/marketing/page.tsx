@@ -6,7 +6,7 @@ import {
   getSocialAccounts, saveSocialAccount, getVideos, addVideo, removeVideo,
   getIntros, addIntro, updateIntro, removeIntro, onStoreChange,
   runDueCampaigns, getAutomations, saveAutomations,
-  getBrands, addBrand, updateBrand, removeBrand, BRAND_GROUPS,
+  getBrands, addBrand, updateBrand, removeBrand, BRAND_GROUPS, getBrandGroupOptions,
   getSocialPosts, addSocialPost, updateSocialPost, removeSocialPost, SOCIAL_PLATFORMS,
   getPromos, addPromo, updatePromo, removePromo,
   Lead, Campaign, SocialAccount, VideoItem, IntroItem, Automations, Brand,
@@ -196,10 +196,11 @@ function UtmBuilder() {
 function BrandsManager() {
   const [editId, setEditId] = useState<string | null>(null);
   const [brands, setBrands] = useState<Brand[]>([]);
+  const [brandGroups, setBrandGroups] = useState<string[]>([...BRAND_GROUPS]);
   const [form, setForm] = useState({ name: "", group: BRAND_GROUPS[0], logoUrl: "" });
 
   useEffect(() => {
-    const sync = () => setBrands(getBrands());
+    const sync = () => { setBrands(getBrands()); setBrandGroups(getBrandGroupOptions()); };
     sync();
     return onStoreChange(sync);
   }, []);
@@ -240,7 +241,7 @@ function BrandsManager() {
           <div>
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-faint">Group</label>
             <select className={input} value={form.group} onChange={(e) => setForm((f) => ({ ...f, group: e.target.value }))}>
-              {BRAND_GROUPS.map((g) => (<option key={g} value={g}>{g}</option>))}
+              {brandGroups.map((g) => (<option key={g} value={g}>{g}</option>))}
             </select>
           </div>
           <div className="sm:col-span-2">
@@ -263,7 +264,7 @@ function BrandsManager() {
       </Panel>
 
       {/* Grouped list */}
-      {BRAND_GROUPS.filter((g) => brands.some((b) => b.group === g)).map((group) => (
+      {brandGroups.filter((g) => brands.some((b) => b.group === g)).map((group) => (
         <div key={group}>
           <h3 className="mb-2 font-serif text-base text-forest-deep">{group} <span className="text-xs text-ink-faint">({brands.filter((b) => b.group === group).length})</span></h3>
           <div className="grid gap-2 sm:grid-cols-2">
@@ -285,7 +286,7 @@ function BrandsManager() {
                   <div className="flex min-w-0 flex-1 items-center gap-1.5">
                     <input defaultValue={b.name} onBlur={(e) => updateBrand(b.id, { name: e.target.value })} className="min-w-0 flex-1 rounded border border-firefly/25 px-2 py-1 text-sm outline-none focus:border-firefly" />
                     <select defaultValue={b.group} onChange={(e) => updateBrand(b.id, { group: e.target.value })} className="rounded border border-firefly/25 px-1 py-1 text-[11px] outline-none focus:border-firefly">
-                      {BRAND_GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
+                      {brandGroups.map((g) => <option key={g} value={g}>{g}</option>)}
                     </select>
                     <button onClick={() => setEditId(null)} className="text-[11px] font-semibold text-forest hover:underline">Done</button>
                   </div>

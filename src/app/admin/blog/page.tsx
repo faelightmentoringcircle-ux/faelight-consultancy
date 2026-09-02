@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   getBlogPosts, addBlogPost, updateBlogPost, removeBlogPost, onStoreChange,
-  BlogPost, BlogStatus, BLOG_TAGS, BlogTag, slugify,
+  BlogPost, BlogStatus, getBlogTagOptions, BlogTag, slugify,
 } from "@/lib/store";
 import { formatDateShort } from "@/lib/format";
 import { AdminHeader, Panel, StatTile } from "@/components/admin/ui";
@@ -189,7 +189,7 @@ function PostEditor({ post, onDone }: { post: BlogPost | null; onDone: () => voi
 
           <div className="grid gap-3 sm:grid-cols-2">
             <select className={input} value={f.tag} onChange={(e) => setF((x) => ({ ...x, tag: e.target.value as BlogTag }))}>
-              {BLOG_TAGS.map((t) => <option key={t} value={t}>{t}</option>)}
+              {getBlogTagOptions().map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
             <input className={input} placeholder="Author" value={f.author}
               onChange={(e) => setF((x) => ({ ...x, author: e.target.value }))} />

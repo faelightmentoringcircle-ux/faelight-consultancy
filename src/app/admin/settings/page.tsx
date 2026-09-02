@@ -14,6 +14,7 @@ import {
 } from "@/lib/auth";
 import { initials } from "@/lib/format";
 import { AdminHeader, Panel } from "@/components/admin/ui";
+import { ManagedListsPanel } from "@/components/admin/ManagedLists";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -125,6 +126,9 @@ export default function SettingsPage() {
 
       {/* Registration confirmation email */}
       <RegEmailPanel s={s} update={update} />
+
+      {/* Curatable dropdown option lists */}
+      <ManagedListsPanel />
 
       {/* Team accounts */}
       <TeamAccounts />

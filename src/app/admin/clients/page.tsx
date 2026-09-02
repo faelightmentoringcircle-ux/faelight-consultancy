@@ -8,9 +8,9 @@ import {
   archiveClient,
   removeClient,
   onStoreChange,
+  getLeadSourceOptions,
   ClientContact,
 } from "@/lib/store";
-import { LEAD_SOURCES } from "@/lib/content";
 import { AdminHeader, Panel } from "@/components/admin/ui";
 
 const input =
@@ -306,7 +306,7 @@ export default function AdminClientsPage() {
               <label className="space-y-1"><span className={lbl}>Industry</span><input className={input} value={draft.industry} onChange={(e) => set({ industry: e.target.value })} /></label>
               <label className="space-y-1"><span className={lbl}>Lead source</span>
                 <input className={input} list="fae-lead-sources" value={draft.leadSource} onChange={(e) => set({ leadSource: e.target.value })} placeholder="Choose or type…" />
-                <datalist id="fae-lead-sources">{LEAD_SOURCES.map((s) => <option key={s} value={s} />)}</datalist>
+                <datalist id="fae-lead-sources">{getLeadSourceOptions().map((s) => <option key={s} value={s} />)}</datalist>
               </label>
               <label className="space-y-1 sm:col-span-2"><span className={lbl}>Who is / description</span><input className={input} value={draft.whois} onChange={(e) => set({ whois: e.target.value })} /></label>
               <label className="space-y-1 sm:col-span-2"><span className={lbl}>Projects (comma-separated)</span><input className={input} value={draft.projects} onChange={(e) => set({ projects: e.target.value })} /></label>

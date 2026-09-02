@@ -5,7 +5,7 @@
 // =====================================================================
 "use client";
 
-import { CategorySlug, SessionItem, SessionPromo, SessionDay, SESSIONS, Service, SERVICES, offeringKind, BookingType, BOOKING_TYPES, TeamMember, TEAM, FOUNDER, PROJECT_TEAMS, ProjectTeam } from "./content";
+import { CategorySlug, SessionItem, SessionPromo, SessionDay, SESSIONS, Service, SERVICES, offeringKind, BookingType, BOOKING_TYPES, TeamMember, TEAM, FOUNDER, PROJECT_TEAMS, ProjectTeam, LEAD_SOURCES } from "./content";
 export type { ProjectTeam } from "./content";
 import { pushKey } from "./sync";
 import { POOL_SEED } from "./poolData";
@@ -179,6 +179,10 @@ const KEYS = {
   publicTeamCustom: "fae.publicteamcustom.v1",
   founder: "fae.founder.v1",
   projectTeams: "fae.projectteams.v1",
+  leadSources: "fae.leadsources.v1",
+  regTiers: "fae.regtiers.v1",
+  blogTags: "fae.blogtags.v1",
+  brandGroups: "fae.brandgroups.v1",
   activity: "fae.activity.v1",
   notifRead: "fae.notifread.v1",
   customServices: "fae.customservices.v1",
@@ -1394,6 +1398,26 @@ export function removeProjectTeam(id: string) {
   saveProjectTeams(getProjectTeams().filter((t) => t.id !== id));
 }
 
+// --- Generic admin-managed option lists (simple editable string lists) -----
+export const DEFAULT_REG_TIERS = ["Regular", "VIP", "Scholar"];
+function getManagedList(key: string, seed: readonly string[]): string[] {
+  if (typeof window === "undefined") return [...seed];
+  seedIfMissing(key, () => [...seed]);
+  const list = read<string[]>(key, [...seed]);
+  return list.length ? list : [...seed];
+}
+function setManagedList(key: string, list: string[]) {
+  write(key, Array.from(new Set(list.map((s) => s.trim()).filter(Boolean))));
+}
+export const getLeadSourceOptions = () => getManagedList(KEYS.leadSources, LEAD_SOURCES);
+export const setLeadSourceOptions = (list: string[]) => setManagedList(KEYS.leadSources, list);
+export const getRegTierOptions = () => getManagedList(KEYS.regTiers, DEFAULT_REG_TIERS);
+export const setRegTierOptions = (list: string[]) => setManagedList(KEYS.regTiers, list);
+export const getBlogTagOptions = () => getManagedList(KEYS.blogTags, BLOG_TAGS);
+export const setBlogTagOptions = (list: string[]) => setManagedList(KEYS.blogTags, list);
+export const getBrandGroupOptions = () => getManagedList(KEYS.brandGroups, BRAND_GROUPS);
+export const setBrandGroupOptions = (list: string[]) => setManagedList(KEYS.brandGroups, list);
+
 /** Create a fresh invoice draft with one blank line item, ready to edit. */
 export function addInvoice(): DocRecord {
   const today = new Date().toISOString().slice(0, 10);
@@ -2285,7 +2309,8 @@ export function removeReview(id: string) {
 // --- Blog / Insights (admin-managed) ---------------------------------
 export type BlogStatus = "draft" | "published";
 export const BLOG_TAGS = ["Insights", "Systems", "VA Career", "Community", "News", "Guide"] as const;
-export type BlogTag = (typeof BLOG_TAGS)[number];
+// Open string so blog tags can be admin-managed (add/remove); BLOG_TAGS is the seed.
+export type BlogTag = string;
 
 export interface BlogPost {
   id: string;

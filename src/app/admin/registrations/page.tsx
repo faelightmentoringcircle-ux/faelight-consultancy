@@ -8,11 +8,12 @@ import {
   archiveRegistration,
   removeRegistration,
   onStoreChange,
+  getLeadSourceOptions,
+  getRegTierOptions,
   Registration,
   RegStatus,
   RegType,
 } from "@/lib/store";
-import { LEAD_SOURCES } from "@/lib/content";
 import { AdminHeader, Panel } from "@/components/admin/ui";
 
 const input = "w-full rounded-xl border border-firefly/25 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-firefly";
@@ -171,7 +172,7 @@ export default function RegistrationsPage() {
               <label className="space-y-1"><span className={lbl}>Batch</span><input className={input} value={draft.batch} onChange={(e) => set({ batch: e.target.value })} placeholder="e.g. 3" /></label>
               <label className="space-y-1"><span className={lbl}>Tier</span>
                 <select className={input} value={draft.tier} onChange={(e) => set({ tier: e.target.value })}>
-                  {["Regular", "VIP", "Scholar", ""].map((t) => <option key={t} value={t}>{t || "—"}</option>)}
+                  {[...getRegTierOptions(), ""].map((t) => <option key={t} value={t}>{t || "—"}</option>)}
                 </select>
               </label>
               <label className="space-y-1"><span className={lbl}>Amount paid</span><input className={input} value={draft.amountPaid} onChange={(e) => set({ amountPaid: e.target.value })} /></label>
@@ -191,7 +192,7 @@ export default function RegistrationsPage() {
                 ) : (
                   <>
                     <input className={input} list="fae-lead-sources" value={draft.leadFrom} onChange={(e) => set({ leadFrom: e.target.value })} placeholder="Choose or type…" />
-                    <datalist id="fae-lead-sources">{LEAD_SOURCES.map((s) => <option key={s} value={s} />)}</datalist>
+                    <datalist id="fae-lead-sources">{getLeadSourceOptions().map((s) => <option key={s} value={s} />)}</datalist>
                   </>
                 )}
               </label>
