@@ -217,15 +217,9 @@ export default function ProjectsPage() {
             </div>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               <label className="space-y-1 sm:col-span-2"><span className={lbl}>Project name</span><input className={input} value={draft.name} onChange={(e) => set({ name: e.target.value })} /></label>
-              <label className="space-y-1"><span className={lbl}>Client</span>
-                <input className={input} list="fae-project-clients" value={draft.client} onChange={(e) => set({ client: e.target.value })} placeholder="Pick from contacts or type…" />
-                <datalist id="fae-project-clients">
-                  {clients.map((c) => {
-                    const label = c.company ? `${c.name} — ${c.company}` : c.name;
-                    return <option key={c.id} value={label} />;
-                  })}
-                </datalist>
-              </label>
+              <div className="space-y-1"><span className={lbl}>Client</span>
+                <ClientPicker value={draft.client} clients={clients} onChange={(v) => set({ client: v })} />
+              </div>
               <label className="space-y-1"><span className={lbl}>Owner</span><input className={input} value={draft.owner} onChange={(e) => set({ owner: e.target.value })} /></label>
               <label className="space-y-1"><span className={lbl}>Status</span>
                 <div className="flex items-center gap-2">
@@ -274,6 +268,47 @@ export default function ProjectsPage() {
 
       {manageStatus && <ProjectStatusManager statuses={statuses} projects={projects} onClose={() => setManageStatus(false)} />}
     </>
+  );
+}
+
+// Client picker — pick one OR several clients from contacts, or type a custom
+// name. Stored on the project as a comma-separated string (back-compatible with
+// the old single-client value). Chips make it easy to change or remove.
+function ClientPicker({ value, clients, onChange }: { value: string; clients: ClientContact[]; onChange: (v: string) => void }) {
+  const [custom, setCustom] = useState("");
+  const selected = value ? value.split(",").map((s) => s.trim()).filter(Boolean) : [];
+  const options = clients.map((c) => (c.company ? `${c.name} — ${c.company}` : c.name));
+  const available = options.filter((o) => !selected.includes(o));
+  const add = (name: string) => {
+    const n = name.trim();
+    if (!n || selected.includes(n)) return;
+    onChange([...selected, n].join(", "));
+  };
+  const remove = (name: string) => onChange(selected.filter((s) => s !== name).join(", "));
+  return (
+    <div className="space-y-1.5">
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {selected.map((s) => (
+            <span key={s} className="inline-flex items-center gap-1.5 rounded-full bg-firefly/12 px-2.5 py-1 text-xs font-medium text-forest-deep">
+              {s}
+              <button type="button" onClick={() => remove(s)} aria-label={`Remove ${s}`} className="text-ink-faint hover:text-rose-600">✕</button>
+            </span>
+          ))}
+        </div>
+      )}
+      <select className={input} value="" onChange={(e) => { if (e.target.value) { add(e.target.value); e.target.value = ""; } }}>
+        <option value="">{selected.length ? "＋ Add another client…" : "Pick a client from contacts…"}</option>
+        {available.map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+      <input
+        className={input}
+        value={custom}
+        onChange={(e) => setCustom(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(custom); setCustom(""); } }}
+        placeholder="…or type a client name & press Enter"
+      />
+    </div>
   );
 }
 

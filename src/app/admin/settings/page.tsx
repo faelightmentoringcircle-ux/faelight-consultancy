@@ -9,7 +9,7 @@ import {
 } from "@/lib/store";
 import {
   getAllUsers, addUser, removeUser, updateUser, archiveUser, emailExists,
-  getUserModules, setUserModuleLevel, ADMIN_MODULES,
+  getUserModules, setUserModuleLevel, ADMIN_MODULES, inviteUser, isSupabaseAuth,
   useAuth, AdminUser, Role, DEMO_PASSWORD, AccessLevel,
 } from "@/lib/auth";
 import { initials } from "@/lib/format";
@@ -521,6 +521,7 @@ function TeamAccounts() {
                     <option value="team">team</option>
                     <option value="admin">admin</option>
                   </select>
+                  {isSupabaseAuth() && u.email && !u.archived && <InviteButton email={u.email} name={u.name} />}
                   <button onClick={() => setEditUser(u)} className="rounded-md border border-firefly/25 px-1.5 py-1 text-[10px] font-semibold text-forest hover:bg-firefly/10">Edit</button>
                   <button onClick={() => archiveUser(u.id, !u.archived)} className="rounded-md border border-firefly/25 px-1.5 py-1 text-[10px] font-semibold text-ink-soft hover:bg-firefly/10">{u.archived ? "Restore" : "Archive"}</button>
                   <button onClick={() => { if (confirm(`Delete ${u.name}'s account? This cannot be undone.`)) removeUser(u.id); }} className="rounded-md border border-rose-200 px-1.5 py-1 text-[10px] font-semibold text-rose-600 hover:bg-rose-50">Delete</button>
@@ -561,6 +562,25 @@ const MODULE_ICONS: Record<string, string> = {
   feedback: "❤", services: "❖", sessions: "◫", registrations: "☑", pool: "⚑", team: "❂",
   meetings: "▣", templates: "▤", brochures: "▥", content: "◨", guide: "?",
 };
+
+// Send a login invite email to a teammate (admin-only, one click).
+function InviteButton({ email, name }: { email: string; name: string }) {
+  const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [msg, setMsg] = useState("");
+  async function send() {
+    setState("sending"); setMsg("");
+    const r = await inviteUser(email, name);
+    if (r.ok) { setState("sent"); setTimeout(() => setState("idle"), 4000); }
+    else { setState("error"); setMsg(r.error || "Failed"); setTimeout(() => setState("idle"), 6000); }
+  }
+  if (state === "sent") return <span className="rounded-md bg-emerald-100 px-1.5 py-1 text-[10px] font-semibold text-emerald-700">✓ Invite sent</span>;
+  if (state === "error") return <button onClick={send} title={msg} className="rounded-md border border-rose-200 px-1.5 py-1 text-[10px] font-semibold text-rose-600 hover:bg-rose-50">⟳ Retry invite</button>;
+  return (
+    <button onClick={send} disabled={state === "sending"} title={`Email ${email} a link to set their password and log in`} className="rounded-md border border-firefly/40 bg-firefly/10 px-1.5 py-1 text-[10px] font-semibold text-firefly-deep hover:bg-firefly/20 disabled:opacity-50">
+      {state === "sending" ? "Sending…" : "✉ Invite"}
+    </button>
+  );
+}
 
 // Edit a user's details (works for seed + added accounts via overrides).
 function EditUserModal({ user, onClose }: { user: AdminUser; onClose: () => void }) {

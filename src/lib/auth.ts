@@ -278,6 +278,28 @@ export async function sendPasswordReset(email: string): Promise<{ ok: boolean; e
   return { ok: true };
 }
 
+/** Send a login invite email to a teammate (admin only). Calls the secure
+ *  server route, which uses the service-role key to create the invite. The
+ *  person clicks the emailed link and sets their own password on /reset. */
+export async function inviteUser(email: string, name?: string): Promise<{ ok: boolean; error?: string }> {
+  if (!supabase) return { ok: false, error: "Login isn't configured." };
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) return { ok: false, error: "Please sign in again." };
+  try {
+    const res = await fetch("/api/invite-user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ email: email.trim(), name }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.ok) return { ok: false, error: json.error || "Couldn't send the invite." };
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "Network error — please try again." };
+  }
+}
+
 /** Set a new password (used on the reset page after clicking the email link). */
 export async function updatePassword(newPassword: string): Promise<{ ok: boolean; error?: string }> {
   if (!supabase) return { ok: false, error: "Login isn't configured." };

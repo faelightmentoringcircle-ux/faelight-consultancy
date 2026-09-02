@@ -1,10 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Fully static export → produces an `out/` folder you can drag-and-drop
-  // onto Netlify (no server, no build settings needed). The whole app is
-  // client-side (localStorage), so this works perfectly.
-  output: "export",
+  // Runs as a normal Next.js app on Vercel (no more static-only export) so we
+  // can have secure server routes — e.g. /api/invite-user, which uses the
+  // Supabase service-role key server-side to send login invites. Every page is
+  // still client-rendered (localStorage + Supabase), so nothing else changes.
   images: { unoptimized: true },
   trailingSlash: true,
 };
