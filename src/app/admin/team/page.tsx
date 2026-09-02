@@ -12,6 +12,7 @@ import {
 } from "@/lib/store";
 import { AdminHeader, Panel } from "@/components/admin/ui";
 import { WebsiteTeamEditor } from "@/components/admin/WebsiteTeamEditor";
+import { FounderEditor, ProjectTeamsEditor } from "@/components/admin/AboutContentEditors";
 
 const input = "w-full rounded-xl border border-firefly/25 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-firefly";
 const lbl = "block text-[11px] font-semibold uppercase tracking-wide text-ink-faint";
@@ -63,6 +64,10 @@ export default function TeamPage() {
 
       {/* Public website team (the "people behind the magic" section) */}
       <WebsiteTeamEditor />
+
+      {/* Public About-page content */}
+      <FounderEditor />
+      <ProjectTeamsEditor />
 
       {/* Internal team directory ------------------------------------------ */}
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">

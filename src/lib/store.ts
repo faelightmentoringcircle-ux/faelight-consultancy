@@ -5,7 +5,8 @@
 // =====================================================================
 "use client";
 
-import { CategorySlug, SessionItem, SessionPromo, SessionDay, SESSIONS, Service, SERVICES, offeringKind, BookingType, BOOKING_TYPES, TeamMember, TEAM } from "./content";
+import { CategorySlug, SessionItem, SessionPromo, SessionDay, SESSIONS, Service, SERVICES, offeringKind, BookingType, BOOKING_TYPES, TeamMember, TEAM, FOUNDER, PROJECT_TEAMS, ProjectTeam } from "./content";
+export type { ProjectTeam } from "./content";
 import { pushKey } from "./sync";
 import { POOL_SEED } from "./poolData";
 import { CLIENT_SEED } from "./clientData";
@@ -176,6 +177,8 @@ const KEYS = {
   bookingTypesCustom: "fae.bookingtypescustom.v1",
   publicTeam: "fae.publicteam.v1",
   publicTeamCustom: "fae.publicteamcustom.v1",
+  founder: "fae.founder.v1",
+  projectTeams: "fae.projectteams.v1",
   activity: "fae.activity.v1",
   notifRead: "fae.notifread.v1",
   customServices: "fae.customservices.v1",
@@ -1356,6 +1359,39 @@ export function reorderPublicTeam(orderedIds: string[]) {
   const next = { ...all };
   orderedIds.forEach((id, i) => { next[id] = { ...next[id], order: i }; });
   write(KEYS.publicTeam, next);
+}
+
+// --- Founder (public About-page bio/stats) — admin-editable ----------------
+export interface FounderInfo {
+  name: string; title: string; role: string; bio: string;
+  stats: { value: string; label: string }[];
+  personal: string[];
+}
+export function getFounder(): FounderInfo {
+  return { ...(FOUNDER as FounderInfo), ...read<Partial<FounderInfo>>(KEYS.founder, {}) };
+}
+export function saveFounder(patch: Partial<FounderInfo>) {
+  write(KEYS.founder, { ...getFounder(), ...patch });
+}
+
+// --- Project teams (public About-page section) — admin-editable ------------
+export function getProjectTeams(): ProjectTeam[] {
+  const existing = read<ProjectTeam[] | null>(KEYS.projectTeams, null);
+  return existing ?? PROJECT_TEAMS;
+}
+export function saveProjectTeams(list: ProjectTeam[]) {
+  write(KEYS.projectTeams, list);
+}
+export function addProjectTeam(input: Omit<ProjectTeam, "id">): ProjectTeam {
+  const t: ProjectTeam = { ...input, id: uid("pt-c") };
+  saveProjectTeams([...getProjectTeams(), t]);
+  return t;
+}
+export function updateProjectTeam(id: string, patch: Partial<ProjectTeam>) {
+  saveProjectTeams(getProjectTeams().map((t) => (t.id === id ? { ...t, ...patch } : t)));
+}
+export function removeProjectTeam(id: string) {
+  saveProjectTeams(getProjectTeams().filter((t) => t.id !== id));
 }
 
 /** Create a fresh invoice draft with one blank line item, ready to edit. */

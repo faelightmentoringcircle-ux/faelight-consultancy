@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CONTACT, FOUNDER, PROJECT_TEAMS } from "@/lib/content";
+import { CONTACT } from "@/lib/content";
 import { Eyebrow, Fireflies, Glow, StarDivider } from "@/components/Motifs";
 import { AboutTeam } from "@/components/AboutTeam";
+import { AboutFounder } from "@/components/AboutFounder";
+import { AboutProjectTeams } from "@/components/AboutProjectTeams";
 import { CtaBand } from "@/components/Sections";
 import { AboutVideo } from "@/components/AboutVideo";
 
@@ -50,47 +52,7 @@ export default function AboutPage() {
 
       {/* Founder ---------------------------------------------------- */}
       <section className="section">
-        <div className="container-fae grid gap-10 lg:grid-cols-5 lg:items-center">
-          <div className="lg:col-span-2">
-            <div className="relative mx-auto max-w-sm">
-              <Glow className="-right-4 -top-4" size={280} />
-              <div className="card relative bg-enchanted text-center text-parchment">
-                <Fireflies count={7} />
-                <div className="relative z-10">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/brand/maia-portrait.jpg"
-                    alt="Maria “Maia” Castañeda"
-                    className="mx-auto h-32 w-32 rounded-full object-cover shadow-glow ring-2 ring-firefly/50"
-                  />
-                  <p className="mt-5 font-serif text-2xl">{FOUNDER.name}</p>
-                  <p className="mt-1 text-sm text-firefly-bright/80">{FOUNDER.title}</p>
-                  <div className="mt-4 flex flex-wrap justify-center gap-2">
-                    {FOUNDER.personal.map((p) => (
-                      <span key={p} className="rounded-full border border-firefly/40 px-3 py-1 text-xs text-parchment/80">
-                        {p}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="lg:col-span-3">
-            <Eyebrow>The founder</Eyebrow>
-            <h2 className="mt-3 font-serif text-3xl text-forest-deep">{FOUNDER.role}</h2>
-            <p className="mt-4 text-ink-soft">{FOUNDER.bio}</p>
-            <div className="mt-8 grid gap-4 sm:grid-cols-3">
-              {FOUNDER.stats.map((s) => (
-                <div key={s.label} className="card text-center">
-                  <p className="font-serif text-3xl text-forest">{s.value}</p>
-                  <p className="mt-1 text-xs uppercase tracking-wide text-ink-faint">{s.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <AboutFounder />
       </section>
 
       <StarDivider />
@@ -121,41 +83,7 @@ export default function AboutPage() {
               members and the projects they own.
             </p>
           </div>
-          <div className="mt-12 grid gap-6 lg:grid-cols-3">
-            {PROJECT_TEAMS.map((t) => (
-              <div key={t.id} className="card flex flex-col">
-                <div className="flex items-center gap-3">
-                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-twilight/15 to-forest/15 text-xl text-firefly">
-                    {t.glyph}
-                  </span>
-                  <h3 className="font-serif text-lg text-forest-deep">{t.name}</h3>
-                </div>
-                <p className="mt-3 text-sm text-ink-soft">{t.focus}</p>
-
-                <p className="mt-4 text-[11px] font-semibold uppercase tracking-eyebrow text-firefly-deep">Members</p>
-                <ul className="mt-2 space-y-1.5">
-                  {t.members.map((m) => (
-                    <li key={m.name} className="flex items-center gap-2 text-sm">
-                      <span className="grid h-6 w-6 place-items-center rounded-full bg-forest/10 text-[10px] font-bold text-forest">
-                        {m.name[0]}
-                      </span>
-                      <span className="font-medium text-forest-deep">{m.name}</span>
-                      <span className="text-xs text-ink-faint">· {m.role}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <p className="mt-4 text-[11px] font-semibold uppercase tracking-eyebrow text-firefly-deep">Projects</p>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {t.projects.map((p) => (
-                    <span key={p} className="rounded-full bg-firefly/10 px-2 py-0.5 text-[11px] font-medium text-firefly-deep">
-                      {p}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          <AboutProjectTeams />
         </div>
       </section>
 
