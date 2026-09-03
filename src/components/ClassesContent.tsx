@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SessionItem } from "@/lib/content";
-import { getSessions, onStoreChange, sessionDateText, sessionSeatText, seatsLeft, isSoldOut } from "@/lib/store";
+import { getSessions, onStoreChange, sessionDateText, sessionSeatText, sessionSlug, seatsLeft, isSoldOut } from "@/lib/store";
 import { peso } from "@/lib/format";
 import { Eyebrow, Fireflies, Glow, Star } from "@/components/Motifs";
 import { CtaBand } from "@/components/Sections";
@@ -52,7 +52,7 @@ function SessionCard({ s }: { s: SessionItem }) {
       <div className="mt-4 border-t border-firefly/15 pt-3">
         {s.status === "upcoming" ? (
           <Link
-            href={s.registerUrl ?? `/register?session=${s.id}`}
+            href={s.registerUrl ?? `/register/${sessionSlug(s)}`}
             className={`btn-gold w-full !py-2 text-xs ${sold ? "pointer-events-none opacity-50" : ""}`}
           >
             {sold ? "Sold out" : "View details & register"}

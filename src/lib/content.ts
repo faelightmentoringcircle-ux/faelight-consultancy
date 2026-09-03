@@ -765,6 +765,8 @@ export interface SessionItem {
   // External forms
   registerFormUrl?: string; // Google Form for sign-ups
   feedbackFormUrl?: string; // Google Form for feedback (past sessions)
+  // Clean public link — /register/<slug>. Optional; auto-derived from the title when blank.
+  slug?: string;
 }
 
 export const SESSIONS: SessionItem[] = [
@@ -805,7 +807,8 @@ export const SESSIONS: SessionItem[] = [
     hostRole: "Founder of Faelight · VA Coach & Business Skills Trainer",
     hostBio: "20+ years in executive administration and 500+ VAs trained across Filipino, Japanese, American and Australian work environments. Credible and human — Faelight is built from lived experience, not generic templates.",
     registerFormUrl: DEFAULT_REGISTER_FORM,
-    registerUrl: "/register?session=ses-found-jul",
+    slug: "foundations",
+    registerUrl: "/register/foundations",
   },
   {
     id: "ses-notion-webinar",
@@ -821,7 +824,8 @@ export const SESSIONS: SessionItem[] = [
     endTime: "20:30",
     price: 0,
     registerFormUrl: DEFAULT_REGISTER_FORM,
-    registerUrl: "/register?session=ses-notion-webinar",
+    slug: "notion",
+    registerUrl: "/register/notion",
   },
   {
     id: "ses-eva-master",
@@ -840,7 +844,8 @@ export const SESSIONS: SessionItem[] = [
     price: 3500,
     promos: [{ code: "EARLYBIRD", label: "Early bird", kind: "percent", value: 15, active: true }],
     registerFormUrl: DEFAULT_REGISTER_FORM,
-    registerUrl: "/register?session=ses-eva-master",
+    slug: "eva",
+    registerUrl: "/register/eva",
   },
   {
     id: "ses-first-client",

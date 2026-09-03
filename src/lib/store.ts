@@ -536,6 +536,23 @@ export function getSession(id: string): SessionItem | undefined {
   return getSessions().find((s) => s.id === id);
 }
 
+/** The clean public URL slug for a session — its custom slug, else derived from the title. */
+export function sessionSlug(s: SessionItem): string {
+  return s.slug && s.slug.trim() ? slugify(s.slug) : slugify(s.title);
+}
+
+/** The public registration link for a session — clean /register/<slug> path. */
+export function sessionRegisterPath(s: SessionItem): string {
+  return `/register/${sessionSlug(s)}`;
+}
+
+/** Resolve a session from a URL token that may be a slug OR a raw session id (back-compat). */
+export function getSessionBySlug(token: string): SessionItem | undefined {
+  const t = token.trim().toLowerCase();
+  const all = getSessions();
+  return all.find((s) => sessionSlug(s) === t) ?? all.find((s) => s.id === token);
+}
+
 // ---- Derived session display / seats / pricing ----------------------
 function fmtDay(ymdStr: string): string {
   // "2026-09-14" -> "Sept 14, 2026" (no Date.now dependence)

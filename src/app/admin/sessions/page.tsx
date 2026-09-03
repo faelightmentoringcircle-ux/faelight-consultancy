@@ -11,6 +11,7 @@ import {
   onStoreChange,
   sessionDateText,
   sessionSeatText,
+  sessionSlug,
   SessionItem,
   SessionPromo,
   SessionDay,
@@ -76,6 +77,17 @@ export default function AdminSessionsPage() {
   const [sendFor, setSendFor] = useState<SessionItem | null>(null);
   const [sendMsg, setSendMsg] = useState("");
   const [sent, setSent] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  function copyLink(s: SessionItem) {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const url = `${origin}/register/${sessionSlug(s)}`;
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(url).catch(() => {});
+    }
+    setCopied(s.id);
+    setTimeout(() => setCopied((c) => (c === s.id ? null : c)), 1800);
+  }
 
   function openSend(s: SessionItem) {
     const recips = getRegistrations().filter((r) => !r.archived && r.item === s.title);
@@ -122,12 +134,12 @@ export default function AdminSessionsPage() {
     if (typeof draft.seatsTotal === "number") synced.detail = sessionSeatText({ ...draft, id: "x" } as SessionItem);
     if (editing === "new") {
       const created = addSession(synced);
-      // Point the public "Register" button at the class landing page.
-      updateSession(created.id, { registerUrl: draft.registerUrl?.trim() || `/register?session=${created.id}` });
+      // Point the public "Register" button at the clean per-program landing page.
+      updateSession(created.id, { registerUrl: draft.registerUrl?.trim() || `/register/${sessionSlug(created)}` });
     } else if (editing) {
       updateSession(editing, {
         ...synced,
-        registerUrl: draft.registerUrl?.trim() || `/register?session=${editing}`,
+        registerUrl: draft.registerUrl?.trim() || `/register/${sessionSlug({ ...synced, id: editing } as SessionItem)}`,
       });
     }
     setEditing(null);
@@ -176,8 +188,15 @@ export default function AdminSessionsPage() {
                     {sessionDateText(s)} · Hosted by {s.host} · {sessionSeatText(s)}
                     {typeof s.price === "number" && <> · {s.price > 0 ? peso(s.price) : "Free"}</>}
                   </p>
+                  <p className="mt-1 flex items-center gap-1.5 text-[11px] text-ink-faint">
+                    <span className="text-firefly-deep">🔗</span>
+                    <code className="rounded bg-firefly/10 px-1.5 py-0.5 font-mono text-forest">/register/{sessionSlug(s)}</code>
+                  </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-1.5">
+                  <button onClick={() => copyLink(s)} className="rounded-lg border border-firefly/25 px-2.5 py-1 text-xs font-semibold text-forest hover:bg-firefly/10">
+                    {copied === s.id ? "✓ Copied!" : "🔗 Copy link"}
+                  </button>
                   {s.status === "upcoming" && (
                     <button onClick={() => openSend(s)} className="rounded-lg bg-forest px-2.5 py-1 text-xs font-semibold text-parchment hover:bg-forest-deep">✉ Send update</button>
                   )}
@@ -383,8 +402,17 @@ export default function AdminSessionsPage() {
 
               <label className="space-y-1 sm:col-span-2"><span className={lbl}>Description</span><textarea rows={2} className={input} value={draft.blurb} onChange={(e) => set({ blurb: e.target.value })} /></label>
 
+              {/* Clean public link */}
+              <label className="space-y-1 sm:col-span-2"><span className={lbl}>Custom link name <span className="text-ink-faint/70">(optional — leave blank to auto-name from the title)</span></span>
+                <div className="flex items-center gap-1.5">
+                  <span className="shrink-0 text-sm text-ink-faint">/register/</span>
+                  <input className={input} value={draft.slug ?? ""} onChange={(e) => set({ slug: e.target.value })} placeholder={draft.title ? sessionSlug({ ...draft, id: "x" } as SessionItem) : "notion"} />
+                </div>
+                <p className="text-[11px] text-ink-faint">Share link: <code className="rounded bg-firefly/10 px-1.5 py-0.5 font-mono text-forest">/register/{draft.title || draft.slug ? sessionSlug({ ...draft, id: "x" } as SessionItem) : "…"}</code></p>
+              </label>
+
               {/* Links */}
-              <label className="space-y-1"><span className={lbl}>Register link <span className="text-ink-faint/70">(auto — in-system)</span></span><input className={input} value={draft.registerUrl ?? ""} onChange={(e) => set({ registerUrl: e.target.value })} placeholder="/register?session=…" /></label>
+              <label className="space-y-1"><span className={lbl}>Register link <span className="text-ink-faint/70">(auto — in-system)</span></span><input className={input} value={draft.registerUrl ?? ""} onChange={(e) => set({ registerUrl: e.target.value })} placeholder="/register/…" /></label>
               <label className="space-y-1"><span className={lbl}>Replay link (past)</span><input className={input} value={draft.replayUrl ?? ""} onChange={(e) => set({ replayUrl: e.target.value })} /></label>
               <label className="space-y-1 sm:col-span-2"><span className={lbl}>Zoom / Meet link (for attendee updates)</span><input className={input} value={draft.meetingUrl ?? ""} onChange={(e) => set({ meetingUrl: e.target.value })} placeholder="https://us02web.zoom.us/j/…" /></label>
 
