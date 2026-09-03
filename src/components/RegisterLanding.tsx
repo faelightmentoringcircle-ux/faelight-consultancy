@@ -69,7 +69,10 @@ function RegisterInner({ forced }: { forced?: string }) {
       </div>
     );
 
-  return <Landing s={session} />;
+  // Other programs currently open for registration (to let visitors hop between them).
+  const others = sessions.filter((x) => x.status === "upcoming" && x.id !== session.id);
+
+  return <Landing s={session} others={others} />;
 }
 
 // Detect a batch number from a title like "Foundations Class Batch 5".
@@ -81,7 +84,7 @@ function parseBatch(title: string): string {
 const PACKAGES = ["Regular", "VIP"] as const;
 type Pkg = (typeof PACKAGES)[number];
 
-function Landing({ s }: { s: SessionItem }) {
+function Landing({ s, others }: { s: SessionItem; others: SessionItem[] }) {
   const [code, setCode] = useState("");
   const [promo, setPromo] = useState<PromoResult | null>(null);
 
@@ -488,6 +491,44 @@ function Landing({ s }: { s: SessionItem }) {
                     ))}
                   </ul>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Other programs open right now — hop between concurrent registrations */}
+          {others.length > 0 && (
+            <div className="mt-12">
+              <div className="flex items-center justify-between gap-3">
+                <Eyebrow>Also open now</Eyebrow>
+                <Link href="/classes" className="text-xs font-semibold text-firefly-deep hover:underline">See all classes →</Link>
+              </div>
+              <h3 className="mt-2 font-serif text-xl text-forest-deep">Other classes you can join</h3>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {others.slice(0, 3).map((o) => {
+                  const oFree = o.price === 0 || (o.price == null && o.kind === "webinar");
+                  const oSold = isSoldOut(o);
+                  return (
+                    <Link
+                      key={o.id}
+                      href={`/register/${sessionSlug(o)}`}
+                      className="group flex flex-col rounded-2xl border border-firefly/20 bg-white/60 p-4 transition hover:border-firefly hover:shadow-glow-sm"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${o.kind === "webinar" ? "bg-twilight/10 text-twilight-light" : "bg-forest/10 text-forest"}`}>{o.kind}</span>
+                        <span className={`text-[11px] font-semibold ${oSold ? "text-rose-500" : "text-firefly-deep"}`}>{sessionSeatText(o)}</span>
+                      </div>
+                      <p className="mt-2 font-serif text-base leading-snug text-forest-deep group-hover:text-firefly-deep">{o.title}</p>
+                      <p className="mt-1 text-xs font-semibold text-forest">{sessionDateText(o)}</p>
+                      <div className="mt-3 flex items-center justify-between border-t border-firefly/15 pt-2.5 text-xs">
+                        <span className="text-ink-faint">Hosted by {o.host}</span>
+                        {typeof o.price === "number" && (
+                          <span className="font-serif text-sm text-forest-deep">{oFree ? "Free" : peso(o.price)}</span>
+                        )}
+                      </div>
+                      <span className="mt-3 text-xs font-semibold text-firefly-deep opacity-0 transition group-hover:opacity-100">View &amp; register →</span>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           )}
