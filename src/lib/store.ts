@@ -200,6 +200,7 @@ export const BRAND_GROUPS = [
 // In the demo these persist locally; in production they write to Supabase and
 // flow through to the public pages + PDFs.
 export interface ServiceOverride {
+  name?: string;
   priceLabel?: string;
   description?: string;
   bestFor?: string;
@@ -290,6 +291,7 @@ export type EffectiveService = Service & { priceShown: boolean };
 function mergeService(s: Service, ov: ServiceOverride): EffectiveService {
   return {
     ...s,
+    name: ov.name?.trim() ? ov.name.trim() : s.name,
     priceLabel: ov.priceLabel ?? s.priceLabel,
     description: ov.description ?? s.description,
     bestFor: ov.bestFor ?? s.bestFor,

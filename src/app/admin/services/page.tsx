@@ -149,6 +149,7 @@ export default function ServicesAdminPage() {
                   {list.map((s) => {
                     const o = overrides[s.id] ?? {};
                     const merged = {
+                      name: o.name?.trim() ? o.name.trim() : s.name,
                       priceLabel: o.priceLabel ?? s.priceLabel,
                       description: o.description ?? s.description,
                       bestFor: o.bestFor ?? s.bestFor,
@@ -162,7 +163,7 @@ export default function ServicesAdminPage() {
                         <div className="flex items-start justify-between gap-4">
                           <div className="min-w-0">
                             <p className="font-medium text-forest-deep">
-                              {s.name}
+                              {merged.name}
                               {customIds.has(s.id) && <span className="ml-2 rounded-full bg-twilight/10 px-2 py-0.5 text-[10px] font-semibold text-twilight-light">custom</span>}
                               {merged.archived && <span className="ml-2 rounded-full bg-stone-200 px-2 py-0.5 text-[10px] font-semibold text-stone-600">archived</span>}
                             </p>
@@ -193,6 +194,9 @@ export default function ServicesAdminPage() {
 
                         {isOpen && (
                           <div className="mt-4 grid gap-3 border-t border-firefly/15 pt-4">
+                            <FieldRow label="Service name">
+                              <input defaultValue={merged.name} onBlur={(e) => saveServiceOverride(s.id, { name: e.target.value })} className={input} />
+                            </FieldRow>
                             <FieldRow label="Price label">
                               <input defaultValue={merged.priceLabel} onBlur={(e) => saveServiceOverride(s.id, { priceLabel: e.target.value })} className={input} />
                             </FieldRow>

@@ -25,6 +25,7 @@ export function OfferingsMenu({ slug }: { slug: CategorySlug }) {
       {services.map((s) => {
         const o = ov[s.id] ?? {};
         // Prices show by default; hidden only when explicitly turned off in admin.
+        const name = o.name?.trim() ? o.name.trim() : s.name;
         const price = o.showPrice === false ? null : (o.priceLabel ?? s.priceLabel);
         const description = o.description ?? s.description;
         const bestFor = o.bestFor ?? s.bestFor;
@@ -34,7 +35,7 @@ export function OfferingsMenu({ slug }: { slug: CategorySlug }) {
             <div className="flex items-start justify-between gap-4">
               <h3 className="font-serif text-lg text-forest-deep">
                 <Star className="mr-1.5 text-sm text-firefly" />
-                {s.name}
+                {name}
               </h3>
               {price && (
                 <span className="whitespace-nowrap rounded-full bg-forest/8 px-3 py-1 text-sm font-semibold text-forest">
