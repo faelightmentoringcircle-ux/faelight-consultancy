@@ -752,7 +752,8 @@ export interface SessionItem {
   seatsTotal?: number;
   seatsTaken?: number;
   // Pricing & discounts
-  price?: number; // PHP; 0 / undefined = free
+  price?: number; // PHP; 0 / undefined = free (this is the Regular price)
+  vipPrice?: number; // PHP; optional VIP-tier price shown on the VIP package button
   promos?: SessionPromo[];
   // Curriculum ("what you'll get") — day-by-day; length = number of days
   curriculum?: SessionDay[];
@@ -786,6 +787,7 @@ export const SESSIONS: SessionItem[] = [
     seatsTotal: 24,
     seatsTaken: 16,
     price: 2500,
+    vipPrice: 3500,
     promos: [
       { code: "EARLYBIRD", label: "Early bird", kind: "percent", value: 15, active: true },
       { code: "SCHOLAR500", label: "Scholarship", kind: "amount", value: 500, active: true },
@@ -842,6 +844,7 @@ export const SESSIONS: SessionItem[] = [
     seatsTotal: 20,
     seatsTaken: 4,
     price: 3500,
+    vipPrice: 4500,
     promos: [{ code: "EARLYBIRD", label: "Early bird", kind: "percent", value: 15, active: true }],
     registerFormUrl: DEFAULT_REGISTER_FORM,
     slug: "eva",

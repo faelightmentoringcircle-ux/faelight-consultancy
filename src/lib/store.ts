@@ -619,8 +619,8 @@ export interface PromoResult {
  * Validate a promo code against a session (per-session promos first, then
  * global active promos) and compute the discounted price.
  */
-export function applyPromoToSession(s: SessionItem, rawCode: string): PromoResult {
-  const base = s.price ?? 0;
+export function applyPromoToSession(s: SessionItem, rawCode: string, baseOverride?: number): PromoResult {
+  const base = baseOverride ?? s.price ?? 0;
   const code = rawCode.trim().toUpperCase();
   if (!code) return { ok: false, code, discount: 0, final: base, reason: "Enter a code." };
   if (base <= 0) return { ok: false, code, discount: 0, final: 0, reason: "This session is free." };

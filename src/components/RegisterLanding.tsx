@@ -104,7 +104,10 @@ function Landing({ s, others }: { s: SessionItem; others: SessionItem[] }) {
   const sold = isSoldOut(s);
   const left = seatsLeft(s);
   const free = s.price === 0 || (s.price == null && s.kind === "webinar");
-  const base = s.price ?? 0;
+  const regularPrice = s.price ?? 0;
+  const hasVip = typeof s.vipPrice === "number";
+  // The price for the package the visitor has selected.
+  const base = pkg === "VIP" && hasVip ? (s.vipPrice as number) : regularPrice;
   const finalPrice = promo?.ok ? promo.final : base;
   const days = (s.curriculum ?? []).filter((d) => d.title.trim() || d.detail.trim());
   const perks = (s.perks ?? []).map((p) => p.trim()).filter(Boolean);
@@ -118,12 +121,18 @@ function Landing({ s, others }: { s: SessionItem; others: SessionItem[] }) {
   const showCoach = !!(coachPhoto || coachBio || coachRole);
 
   function checkCode() {
-    setPromo(applyPromoToSession(s, code));
+    setPromo(applyPromoToSession(s, code, base));
   }
   function clearCode() {
     setCode("");
     setPromo(null);
   }
+
+  // Re-price an applied promo when the visitor switches package (Regular ↔ VIP).
+  useEffect(() => {
+    if (promo?.ok && code) setPromo(applyPromoToSession(s, code, base));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pkg]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -166,7 +175,7 @@ function Landing({ s, others }: { s: SessionItem; others: SessionItem[] }) {
       name: name.trim(),
       session: s,
       packageLabel: pkg,
-      price: promo?.ok ? promo.final : s.price,
+      price: promo?.ok ? promo.final : base,
     });
     setSentEmail(res.email);
     setDelivery(res.delivery);
@@ -426,7 +435,8 @@ function Landing({ s, others }: { s: SessionItem; others: SessionItem[] }) {
                           }`}
                         >
                           {p}
-                          {p === "Regular" && !free && <span className="block text-[10px] text-ink-faint">{peso(base)}</span>}
+                          {!free && p === "Regular" && <span className="block text-[10px] text-ink-faint">{peso(regularPrice)}</span>}
+                          {!free && p === "VIP" && hasVip && <span className="block text-[10px] text-ink-faint">{peso(s.vipPrice as number)}</span>}
                         </button>
                       ))}
                     </div>

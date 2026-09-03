@@ -258,7 +258,8 @@ export default function AdminSessionsPage() {
                 </select>
               </label>
               <label className="space-y-1"><span className={lbl}>Host</span><input className={input} value={draft.host} onChange={(e) => set({ host: e.target.value })} /></label>
-              <label className="space-y-1"><span className={lbl}>Price (₱)</span><input type="number" min={0} className={input} value={draft.price ?? ""} onChange={(e) => set({ price: numOrUndef(e.target.value) })} placeholder="0 = free" /></label>
+              <label className="space-y-1"><span className={lbl}>Regular price (₱)</span><input type="number" min={0} className={input} value={draft.price ?? ""} onChange={(e) => set({ price: numOrUndef(e.target.value) })} placeholder="0 = free" /></label>
+              <label className="space-y-1"><span className={lbl}>VIP price (₱) <span className="text-ink-faint/70">(optional)</span></span><input type="number" min={0} className={input} value={draft.vipPrice ?? ""} onChange={(e) => set({ vipPrice: numOrUndef(e.target.value) })} placeholder="leave blank to hide VIP price" /></label>
 
               {/* Poster / banner image */}
               <fieldset className="space-y-2 rounded-xl border border-firefly/20 bg-white/40 p-3 sm:col-span-2">
