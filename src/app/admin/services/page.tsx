@@ -13,6 +13,7 @@ import {
   restoreService,
   purgeService,
   purgeExpiredServices,
+  setServiceOrder,
   SERVICE_TRASH_DAYS,
   onStoreChange,
   ServiceOverride,
@@ -30,6 +31,24 @@ export default function ServicesAdminPage() {
   const [showTrash, setShowTrash] = useState(false);
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState({ name: "", categorySlug: "mentoring" as CategorySlug, description: "", bestFor: "", priceLabel: "", showPrice: true });
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+
+  // Reorder a service within its category by dropping it onto another row.
+  function reorder(catSlug: CategorySlug, targetId: string) {
+    const drag = dragId;
+    setDragId(null);
+    setDragOverId(null);
+    if (!drag || drag === targetId) return;
+    const ids = services
+      .filter((s) => s.categorySlug === catSlug && !overrides[s.id]?.deletedAt)
+      .sort((a, b) => (overrides[a.id]?.sort ?? a.sort) - (overrides[b.id]?.sort ?? b.sort))
+      .map((s) => s.id);
+    if (!ids.includes(drag) || !ids.includes(targetId)) return; // only within the same category
+    ids.splice(ids.indexOf(drag), 1);
+    ids.splice(ids.indexOf(targetId), 0, drag);
+    setServiceOrder(ids);
+  }
 
   useEffect(() => {
     purgeExpiredServices();
@@ -73,7 +92,7 @@ export default function ServicesAdminPage() {
     <>
       <AdminHeader
         title="Services & Pricing"
-        subtitle="Add, edit, archive or delete services. Edits flow live to the public Pricing page and the brochures/PDFs. Prices show by default — untick “Show this price” to hide one."
+        subtitle="Add, edit, archive or delete services. Drag the ⠿ handle to reorder within a category. Edits flow live to the public Pricing page and the brochures/PDFs. Prices show by default — untick “Show this price” to hide one."
         action={
           <div className="flex items-center gap-2">
             <button onClick={() => setShowTrash((s) => !s)} className="btn-ghost !px-4 !py-2 text-sm">
@@ -128,7 +147,9 @@ export default function ServicesAdminPage() {
 
       <div className="space-y-4">
         {CATEGORIES.map((cat) => {
-          const list = services.filter((s) => s.categorySlug === cat.slug && !overrides[s.id]?.deletedAt);
+          const list = services
+            .filter((s) => s.categorySlug === cat.slug && !overrides[s.id]?.deletedAt)
+            .sort((a, b) => (overrides[a.id]?.sort ?? a.sort) - (overrides[b.id]?.sort ?? b.sort));
           const isCollapsed = collapsed.has(cat.slug);
           return (
             <Panel key={cat.slug} className="!p-0">
@@ -159,9 +180,22 @@ export default function ServicesAdminPage() {
                     };
                     const isOpen = editing === s.id;
                     return (
-                      <div key={s.id} className={`rounded-xl border border-firefly/15 bg-parchment-card p-4 ${merged.archived ? "opacity-60" : ""}`}>
+                      <div
+                        key={s.id}
+                        draggable={!isOpen}
+                        onDragStart={(e) => { setDragId(s.id); e.dataTransfer.effectAllowed = "move"; }}
+                        onDragOver={(e) => { e.preventDefault(); if (dragId && dragId !== s.id) setDragOverId(s.id); }}
+                        onDragLeave={() => setDragOverId((d) => (d === s.id ? null : d))}
+                        onDrop={() => reorder(cat.slug, s.id)}
+                        onDragEnd={() => { setDragId(null); setDragOverId(null); }}
+                        className={`rounded-xl border bg-parchment-card p-4 transition ${merged.archived ? "opacity-60" : ""} ${dragId === s.id ? "opacity-40" : ""} ${dragOverId === s.id ? "border-firefly ring-2 ring-firefly/30" : "border-firefly/15"}`}
+                      >
                         <div className="flex items-start justify-between gap-4">
-                          <div className="min-w-0">
+                          <div className="flex min-w-0 items-start gap-2">
+                            {!isOpen && (
+                              <span className="mt-0.5 cursor-grab select-none text-ink-faint/60 active:cursor-grabbing" title="Drag to reorder">⠿</span>
+                            )}
+                            <div className="min-w-0">
                             <p className="font-medium text-forest-deep">
                               {merged.name}
                               {customIds.has(s.id) && <span className="ml-2 rounded-full bg-twilight/10 px-2 py-0.5 text-[10px] font-semibold text-twilight-light">custom</span>}
@@ -173,6 +207,7 @@ export default function ServicesAdminPage() {
                                 <p className="mt-1 text-xs text-ink-faint">Best for: {merged.bestFor}</p>
                               </>
                             )}
+                            </div>
                           </div>
                           <div className="flex shrink-0 flex-col items-end gap-2">
                             <span className="whitespace-nowrap text-sm">

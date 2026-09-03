@@ -204,6 +204,7 @@ export interface ServiceOverride {
   priceLabel?: string;
   description?: string;
   bestFor?: string;
+  sort?: number; // admin drag-to-reorder position within its category
   active?: boolean;
   showPrice?: boolean; // default: prices are HIDDEN on the public "What we offer" menu
   archived?: boolean; // hidden from the public menu, still in the active admin list
@@ -273,13 +274,23 @@ export function purgeExpiredServices() {
 // Public menu: seed + custom, minus archived / deleted / inactive / purged.
 export function visibleServicesByCategory(slug: CategorySlug): Service[] {
   const ov = getServiceOverrides();
+  const eff = (s: Service) => ov[s.id]?.sort ?? s.sort;
   return allServices()
     .filter((s) => s.categorySlug === slug)
     .filter((s) => {
       const o = ov[s.id] ?? {};
       return !o.deletedAt && !o.archived && o.active !== false;
     })
-    .sort((a, b) => a.sort - b.sort);
+    .sort((a, b) => eff(a) - eff(b));
+}
+
+/** Persist a new drag-to-reorder order for a set of services (admin). */
+export function setServiceOrder(orderedIds: string[]) {
+  const all = getServiceOverrides();
+  orderedIds.forEach((id, i) => {
+    all[id] = { ...all[id], sort: i * 10 };
+  });
+  write(KEYS.services, all);
 }
 
 // --- Effective (override-applied) services for the PUBLIC pages/brochures ---
@@ -292,6 +303,7 @@ function mergeService(s: Service, ov: ServiceOverride): EffectiveService {
   return {
     ...s,
     name: ov.name?.trim() ? ov.name.trim() : s.name,
+    sort: ov.sort ?? s.sort,
     priceLabel: ov.priceLabel ?? s.priceLabel,
     description: ov.description ?? s.description,
     bestFor: ov.bestFor ?? s.bestFor,
