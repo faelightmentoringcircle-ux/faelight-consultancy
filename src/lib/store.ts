@@ -789,19 +789,22 @@ export function composeRegistrationEmail(args: {
     studio: s.regEmailFromName,
   };
   let body = renderTemplate(s.regEmailBody, vars);
-  // Append real payment details (link + GCash/bank) for paid classes so the
-  // student can settle right away instead of waiting for a manual follow-up.
+  // Append payment details for paid classes. The QR codes live on the public
+  // /pay page (email clients block uploaded QR images), so the email links
+  // there — and also lists the accounts directly as a fallback.
   if (priceText !== "Free") {
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://www.faelightbiz.com";
+    const payUrl = `${origin}/pay?amt=${typeof args.price === "number" ? args.price : ""}&for=${encodeURIComponent(args.session.title)}`;
     const payLines: string[] = [];
-    if (s.paymentLink.trim()) payLines.push(`Pay now: ${s.paymentLink.trim()}`);
+    if (s.paymentLink.trim()) payLines.push(`Pay now (Wise): ${s.paymentLink.trim()}`);
     if (s.payGcashNumber.trim()) payLines.push(`GCash: ${s.payGcashName} — ${s.payGcashNumber}`);
     if (s.payMayaNumber.trim()) payLines.push(`Maya: ${s.payMayaName} — ${s.payMayaNumber}`);
     if (s.payBankAccountNumber.trim())
       payLines.push(`${s.payBankName}: ${s.payBankAccountName} — ${s.payBankAccountNumber}`);
-    if (payLines.length) {
-      body += `\n\n— How to pay (${priceText}) —\n${payLines.join("\n")}`;
-      if (s.paymentInstructions.trim()) body += `\n\n${s.paymentInstructions.trim()}`;
-    }
+    body += `\n\n— How to pay (${priceText}) —`;
+    body += `\nOpen your payment page to scan any QR (GCash, Maya, BPI) or tap to pay:\n${payUrl}`;
+    if (payLines.length) body += `\n\nPrefer to pay directly? Use any of these:\n${payLines.join("\n")}`;
+    if (s.paymentInstructions.trim()) body += `\n\n${s.paymentInstructions.trim()}`;
   }
   return {
     to: args.to,
@@ -841,13 +844,6 @@ export async function sendRegistrationEmail(args: {
 
   if (!emailDeliveryReady(s)) return { email, delivery: "logged" };
 
-  // A scannable QR of the pay link, as a HOSTED image URL (email clients block
-  // uploaded data-URI images, so we generate one that renders). Empty when no
-  // pay link is set, so the template's <img> just shows nothing.
-  const payQr = s.paymentLink.trim()
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeURIComponent(s.paymentLink.trim())}`
-    : "";
-
   try {
     const res = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
       method: "POST",
@@ -863,7 +859,6 @@ export async function sendRegistrationEmail(args: {
           subject: email.subject,
           message: email.body,
           reply_to: s.notifyEmail,
-          pay_qr: payQr,
         },
       }),
     });
