@@ -7,7 +7,7 @@
 
 import { CategorySlug, SessionItem, SessionPromo, SessionDay, SESSIONS, Service, SERVICES, offeringKind, BookingType, BOOKING_TYPES, TeamMember, TEAM, FOUNDER, PROJECT_TEAMS, ProjectTeam, LEAD_SOURCES } from "./content";
 export type { ProjectTeam } from "./content";
-import { pushKey } from "./sync";
+import { pushKey, submitPublic, fetchPublicSubmissions, deletePublicSubmissions, PublicSubmissionKind } from "./sync";
 import { POOL_SEED } from "./poolData";
 import { CLIENT_SEED } from "./clientData";
 
@@ -409,6 +409,89 @@ export function uid(prefix = "id"): string {
     .slice(2, 7)}`;
 }
 
+// --- Public submissions inbox ----------------------------------------
+// A visitor on the PUBLIC site isn't signed in, so their write to app_state
+// is rejected by Supabase (team-only). When that's the case we ALSO drop the
+// record into the append-only `public_submissions` inbox, which the admin
+// drains into the real lists on load. See supabase/sync.ts + schema.sql.
+function isSignedIn(): boolean {
+  if (typeof window === "undefined") return false;
+  const raw = localStorage.getItem("fae.session.v1");
+  return !!(raw && raw !== "null" && raw !== '""');
+}
+
+/** From a public form: queue the record for the team if the visitor is anon. */
+function queuePublicSubmission(kind: PublicSubmissionKind, id: string, payload: unknown) {
+  if (typeof window === "undefined" || isSignedIn()) return; // team writes go straight to app_state
+  void submitPublic({ id, kind, payload });
+}
+
+// Records created by a public form carry a generated id like "reg-<t>-<rnd>"
+// (3+ dash-parts); seed rows are "reg-01" (2 parts). This tells a real,
+// visitor-submitted record apart from a seed.
+function isGeneratedId(id: unknown): boolean {
+  return typeof id === "string" && id.split("-").length >= 3;
+}
+
+/**
+ * Recover sign-ups/inquiries that were submitted BEFORE the inbox fix — they
+ * were stranded in the submitter's own browser localStorage and never reached
+ * the team. On the public site (anonymous visitor) this re-queues any locally
+ * stored, visitor-generated records into the shared inbox so the admin drain
+ * picks them up. Runs once per browser; de-dupes by id, so it's harmless if a
+ * record already made it across.
+ */
+export function recoverStrandedPublicRecords(): void {
+  if (typeof window === "undefined" || isSignedIn()) return; // team data already syncs
+  const FLAG = "fae.recovered.v1";
+  try { if (localStorage.getItem(FLAG)) return; } catch { return; }
+
+  const pushList = (key: string, kind: PublicSubmissionKind) => {
+    const list = read<Array<{ id: string }> | null>(key, null);
+    if (!list || !Array.isArray(list)) return;
+    for (const rec of list) {
+      if (isGeneratedId(rec?.id)) void submitPublic({ id: rec.id, kind, payload: rec });
+    }
+  };
+  pushList(KEYS.registrations, "registration");
+  pushList(KEYS.leads, "lead");
+  pushList(KEYS.bookings, "booking");
+  pushList(KEYS.feedback, "feedback");
+
+  try { localStorage.setItem(FLAG, new Date().toISOString()); } catch { /* ignore */ }
+}
+
+/**
+ * Drain the shared public-submissions inbox into the normal lists.
+ * Run by the admin app on load (only meaningful when signed in). Idempotent:
+ * records are merged by id, so re-running never duplicates, and drained rows
+ * are cleared from the inbox afterwards.
+ */
+export async function pullPublicSubmissions(): Promise<number> {
+  if (!isSignedIn()) return 0;
+  const rows = await fetchPublicSubmissions();
+  if (!rows.length) return 0;
+
+  const byKind: Record<PublicSubmissionKind, unknown[]> = { registration: [], lead: [], booking: [], feedback: [] };
+  for (const r of rows) if (byKind[r.kind]) byKind[r.kind].push(r.payload);
+
+  const mergeById = <T extends { id: string }>(key: string, seed: () => T[], incoming: unknown[]) => {
+    if (!incoming.length) return;
+    const current = read<T[] | null>(key, null) ?? seed();
+    const have = new Set(current.map((x) => x.id));
+    const fresh = (incoming as T[]).filter((x) => x && x.id && !have.has(x.id));
+    if (fresh.length) write(key, [...fresh, ...current]);
+  };
+
+  mergeById<Registration>(KEYS.registrations, () => REGISTRATION_SEED, byKind.registration);
+  mergeById<Lead>(KEYS.leads, () => [], byKind.lead);
+  mergeById<Booking>(KEYS.bookings, () => [], byKind.booking);
+  mergeById<Feedback>(KEYS.feedback, () => FEEDBACK_SEED, byKind.feedback);
+
+  await deletePublicSubmissions(rows.map((r) => r.id));
+  return rows.length;
+}
+
 // --- Settings --------------------------------------------------------
 export function getSettings(): Settings {
   return { ...DEFAULT_SETTINGS, ...read<Partial<Settings>>(KEYS.settings, {}) };
@@ -796,6 +879,7 @@ export function getFeedback(): Feedback[] {
 export function addFeedback(input: Omit<Feedback, "id" | "createdAt" | "archived" | "featured"> & { featured?: boolean; archived?: boolean }): Feedback {
   const f: Feedback = { ...input, featured: input.featured ?? false, archived: input.archived ?? false, id: uid("fb"), createdAt: new Date().toISOString() };
   write(KEYS.feedback, [f, ...getFeedback()]);
+  queuePublicSubmission("feedback", f.id, f);
   return f;
 }
 export function updateFeedback(id: string, patch: Partial<Feedback>) {
@@ -901,6 +985,7 @@ export function getRegistrations(): Registration[] {
 export function addRegistration(input: Omit<Registration, "id" | "createdAt" | "archived"> & { archived?: boolean }): Registration {
   const r: Registration = { ...input, id: uid("reg"), archived: input.archived ?? false, createdAt: new Date().toISOString() };
   write(KEYS.registrations, [r, ...getRegistrations()]);
+  queuePublicSubmission("registration", r.id, r);
   return r;
 }
 export function updateRegistration(id: string, patch: Partial<Registration>) {
@@ -1862,6 +1947,7 @@ export function addLead(
   };
   const all = read<Lead[]>(KEYS.leads, []);
   write(KEYS.leads, [lead, ...all]);
+  queuePublicSubmission("lead", lead.id, lead);
   return lead;
 }
 
@@ -1952,6 +2038,7 @@ export function addBooking(
     createdAt: new Date().toISOString(),
   };
   write(KEYS.bookings, [...read<Booking[]>(KEYS.bookings, []), booking]);
+  queuePublicSubmission("booking", booking.id, booking);
   // Booking blocks the calendar on the linked/default provider too (sync).
   return booking;
 }
