@@ -63,7 +63,7 @@ export function pushKey(key: string, value: unknown): void {
 // The public site is anonymous, so it can't write app_state. Each public
 // form drops one append-only row into `public_submissions` instead; the
 // admin drains them into the normal lists on load. See supabase/schema.sql.
-export type PublicSubmissionKind = "registration" | "lead" | "booking" | "feedback";
+export type PublicSubmissionKind = "registration" | "lead" | "booking" | "feedback" | "welcomed";
 export interface PublicSubmissionRow {
   id: string;
   kind: PublicSubmissionKind;

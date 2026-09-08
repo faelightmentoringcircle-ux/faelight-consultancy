@@ -7,6 +7,7 @@ import {
   getSessions,
   onStoreChange,
   addRegistration,
+  markRegistrationWelcomed,
   logActivity,
   sendRegistrationEmail,
   ComposedEmail,
@@ -151,7 +152,7 @@ function Landing({ s, others }: { s: SessionItem; others: SessionItem[] }) {
       .filter(Boolean)
       .join(" · ");
 
-    addRegistration({
+    const reg = addRegistration({
       name: name.trim(),
       email: email.trim(),
       item: s.title,
@@ -170,8 +171,10 @@ function Landing({ s, others }: { s: SessionItem; others: SessionItem[] }) {
     logActivity("event", `New registration: ${name.trim()}`, `${s.title} · ${pkg}`, "/admin/registrations");
     setDone(true);
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
-    // Send the confirmation email (admin-editable template, auto-filled with
-    // THIS person's name and details; delivered to their inbox if configured).
+    // Try to send the confirmation email from the visitor's browser (instant).
+    // If it actually delivers, drop a marker so the admin dashboard doesn't
+    // re-send; if it fails here (ad-blocker, flaky network), the dashboard
+    // backup send catches it — so every registrant is emailed exactly once.
     const res = await sendRegistrationEmail({
       to: email.trim(),
       name: name.trim(),
@@ -179,6 +182,7 @@ function Landing({ s, others }: { s: SessionItem; others: SessionItem[] }) {
       packageLabel: pkg,
       price: promo?.ok ? promo.final : base,
     });
+    if (res.delivery === "delivered") markRegistrationWelcomed(reg.id);
     setSentEmail(res.email);
     setDelivery(res.delivery);
   }

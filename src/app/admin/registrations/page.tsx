@@ -7,6 +7,7 @@ import {
   updateRegistration,
   archiveRegistration,
   removeRegistration,
+  sendRegistrationEmailFor,
   onStoreChange,
   getLeadSourceOptions,
   getRegTierOptions,
@@ -42,6 +43,16 @@ export default function RegistrationsPage() {
   const [editing, setEditing] = useState<string | "new" | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
+  const [resend, setResend] = useState<Record<string, "sending" | "sent" | "failed">>({});
+
+  async function doResend(r: Registration) {
+    setResend((m) => ({ ...m, [r.id]: "sending" }));
+    const res = await sendRegistrationEmailFor(r);
+    const ok = res.delivery === "delivered";
+    setResend((m) => ({ ...m, [r.id]: ok ? "sent" : "failed" }));
+    if (ok) updateRegistration(r.id, { welcomed: true });
+    setTimeout(() => setResend((m) => { const n = { ...m }; delete n[r.id]; return n; }), 3000);
+  }
 
   useEffect(() => {
     const sync = () => setRegs(getRegistrations());
@@ -137,6 +148,15 @@ export default function RegistrationsPage() {
                 <td className="py-3 pr-3"><span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize ${STATUS_STYLES[r.status]}`}>{r.status}</span></td>
                 <td className="py-3 pr-0">
                   <div className="flex justify-end gap-1.5">
+                    {r.type !== "service" && r.email && (
+                      resend[r.id] ? (
+                        <span className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${resend[r.id] === "sent" ? "text-emerald-700" : resend[r.id] === "failed" ? "text-rose-600" : "text-ink-faint"}`}>
+                          {resend[r.id] === "sending" ? "Sending…" : resend[r.id] === "sent" ? "Sent ✓" : "Failed"}
+                        </span>
+                      ) : (
+                        <button onClick={() => doResend(r)} title="Send the confirmation email + payment link to this person" className="rounded-lg border border-firefly/25 px-2.5 py-1 text-xs font-semibold text-firefly-deep hover:bg-firefly/10">✉ Resend</button>
+                      )
+                    )}
                     <button onClick={() => openEdit(r)} className="rounded-lg border border-firefly/25 px-2.5 py-1 text-xs font-semibold text-forest hover:bg-firefly/10">Edit</button>
                     <button onClick={() => archiveRegistration(r.id, !r.archived)} className="rounded-lg border border-firefly/25 px-2.5 py-1 text-xs font-semibold text-ink-soft hover:bg-firefly/10">{r.archived ? "Restore" : "Archive"}</button>
                     {confirmRemove === r.id ? (

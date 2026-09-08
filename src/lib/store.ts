@@ -436,6 +436,16 @@ function queuePublicSubmission(kind: PublicSubmissionKind, id: string, payload: 
   void submitPublic({ id, kind, payload });
 }
 
+/**
+ * From the public form, after the visitor's browser successfully sent the
+ * confirmation email: drop a marker so the admin dashboard backup won't
+ * re-send the same email. No-op for signed-in team members.
+ */
+export function markRegistrationWelcomed(regId: string) {
+  if (typeof window === "undefined" || isSignedIn()) return;
+  void submitPublic({ id: `welcomed-${regId}`, kind: "welcomed", payload: { regId } });
+}
+
 // Records created by a public form carry a generated id like "reg-<t>-<rnd>"
 // (3+ dash-parts); seed rows are "reg-01" (2 parts). This tells a real,
 // visitor-submitted record apart from a seed.
@@ -482,23 +492,43 @@ export async function pullPublicSubmissions(): Promise<number> {
   const rows = await fetchPublicSubmissions();
   if (!rows.length) return 0;
 
-  const byKind: Record<PublicSubmissionKind, unknown[]> = { registration: [], lead: [], booking: [], feedback: [] };
+  const byKind: Record<PublicSubmissionKind, unknown[]> = { registration: [], lead: [], booking: [], feedback: [], welcomed: [] };
   for (const r of rows) if (byKind[r.kind]) byKind[r.kind].push(r.payload);
 
-  const mergeById = <T extends { id: string }>(key: string, seed: () => T[], incoming: unknown[]) => {
-    if (!incoming.length) return;
+  // Registration ids the visitor's own browser already emailed — so the
+  // dashboard backup below doesn't double-send.
+  const welcomedSet = new Set(
+    (byKind.welcomed as Array<{ regId?: string }>).map((w) => w?.regId).filter(Boolean) as string[]
+  );
+
+  const mergeById = <T extends { id: string }>(key: string, seed: () => T[], incoming: unknown[]): T[] => {
+    if (!incoming.length) return [];
     const current = read<T[] | null>(key, null) ?? seed();
     const have = new Set(current.map((x) => x.id));
     const fresh = (incoming as T[]).filter((x) => x && x.id && !have.has(x.id));
     if (fresh.length) write(key, [...fresh, ...current]);
+    return fresh;
   };
 
-  mergeById<Registration>(KEYS.registrations, () => REGISTRATION_SEED, byKind.registration);
+  const freshRegs = mergeById<Registration>(KEYS.registrations, () => REGISTRATION_SEED, byKind.registration);
   mergeById<Lead>(KEYS.leads, () => [], byKind.lead);
   mergeById<Booking>(KEYS.bookings, () => [], byKind.booking);
   mergeById<Feedback>(KEYS.feedback, () => FEEDBACK_SEED, byKind.feedback);
 
   await deletePublicSubmissions(rows.map((r) => r.id));
+
+  // Backup confirmation email: for any NEW website class/webinar registration
+  // the visitor's browser didn't manage to email, send it now from the
+  // (reliable) admin browser — exactly once, tracked by the `welcomed` flag.
+  for (const reg of freshRegs) {
+    if (reg.welcomed || reg.type === "service" || !reg.email?.trim()) continue;
+    if (welcomedSet.has(reg.id)) { updateRegistration(reg.id, { welcomed: true }); continue; }
+    try {
+      const res = await sendRegistrationEmailFor(reg);
+      if (res.delivery === "delivered") updateRegistration(reg.id, { welcomed: true });
+    } catch { /* leave unwelcomed; admin can Resend */ }
+  }
+
   return rows.length;
 }
 
@@ -868,6 +898,27 @@ export async function sendRegistrationEmail(args: {
   }
 }
 
+/**
+ * Send (or re-send) the confirmation email for an existing registration —
+ * used by the admin "Resend" button and the dashboard backup send. Resolves
+ * the class + package price from the registration itself.
+ */
+export async function sendRegistrationEmailFor(reg: Registration): Promise<SendResult> {
+  if (!reg.email.trim()) return { email: null, delivery: "failed" };
+  if (reg.type === "service") return { email: null, delivery: "disabled" }; // classes/webinars only
+  const session = getSessions().find((s) => s.title === reg.item);
+  if (!session) return { email: null, delivery: "failed" };
+  const isVip = (reg.tier || "").toLowerCase() === "vip";
+  const price = isVip && typeof session.vipPrice === "number" ? session.vipPrice : session.price;
+  return sendRegistrationEmail({
+    to: reg.email.trim(),
+    name: reg.name,
+    session,
+    packageLabel: reg.tier || "Regular",
+    price,
+  });
+}
+
 // --- Session feedback (collected on-site, reviewed in admin) ----------
 export const FEEDBACK_CLASSES = [
   "Foundations VA",
@@ -997,6 +1048,7 @@ export interface Registration {
   archived: boolean;
   createdAt: string;
   viaWebsite?: boolean; // true when the sign-up came from the public website form
+  welcomed?: boolean; // confirmation email already sent (client or admin-backup)
 }
 
 const REGISTRATION_SEED: Registration[] = [
