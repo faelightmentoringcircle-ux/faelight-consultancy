@@ -11,6 +11,7 @@ export function PaymentDetails({
   const hasQr = !!settings.payGcashQr;
   const hasGcash = !!settings.payGcashNumber;
   const hasBank = !!settings.payBankAccountNumber;
+  const payLink = settings.paymentLink?.trim();
 
   return (
     <div className="rounded-2xl border border-firefly/25 bg-parchment-warm/50 p-5 text-left">
@@ -21,6 +22,17 @@ export function PaymentDetails({
         <p className="mt-1 text-sm text-ink-soft">
           Amount due: <span className="font-semibold text-forest">{amountLabel}</span>
         </p>
+      )}
+
+      {payLink && (
+        <a
+          href={payLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-gold mt-4 flex w-full items-center justify-center gap-2 !py-3 text-sm"
+        >
+          💳 Pay now{amountLabel ? ` — ${amountLabel}` : ""}
+        </a>
       )}
 
       <div className="mt-4 grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center">
@@ -50,7 +62,7 @@ export function PaymentDetails({
               <p className="text-forest-deep">{settings.payBankAccountNumber}</p>
             </div>
           )}
-          {!hasGcash && !hasBank && !hasQr && (
+          {!hasGcash && !hasBank && !hasQr && !payLink && (
             <p className="text-sm text-ink-soft">We'll send payment details by email shortly.</p>
           )}
         </div>

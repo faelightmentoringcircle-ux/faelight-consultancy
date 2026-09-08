@@ -284,6 +284,12 @@ function PaymentDetailsEditor() {
       </div>
 
       <div className="mt-4">
+        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-faint">Pay-now link</p>
+        <input className={input} type="url" defaultValue={s.paymentLink} placeholder="https://…  (GCash/Maya request link, PayMongo link, etc.)" onBlur={(e) => update({ paymentLink: e.target.value.trim() })} />
+        <p className="mt-1 text-xs text-ink-faint">Shows as a “💳 Pay now” button on the registration confirmation and inside the confirmation email. Leave blank to hide it.</p>
+      </div>
+
+      <div className="mt-4">
         <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-faint">Payment instructions</p>
         <textarea className={input} rows={2} defaultValue={s.paymentInstructions} onBlur={(e) => update({ paymentInstructions: e.target.value })} />
       </div>

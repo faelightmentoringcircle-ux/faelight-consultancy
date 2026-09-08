@@ -93,6 +93,7 @@ export interface Settings {
   maxAdvanceDays: number; // 30
   blockedDates: string[]; // specific YYYY-MM-DD days the admin marked off
   paymentInstructions: string;
+  paymentLink: string; // one-tap "Pay now" link (GCash/Maya request, PayMongo link, etc.)
   // Payment collection (shown to clients on booking; settle before session)
   requirePaymentBeforeSession: boolean;
   payGcashName: string;
@@ -341,6 +342,7 @@ export const DEFAULT_SETTINGS: Settings = {
   blockedDates: [],
   paymentInstructions:
     "Please settle your booking fee before your session using the details below, then send your proof of payment to faelightmentoringcircle@gmail.com. Your slot is reserved once payment is confirmed.",
+  paymentLink: "",
   requirePaymentBeforeSession: true,
   payGcashName: "Maria Castañeda",
   payGcashNumber: "0917 892 1280",
@@ -778,11 +780,25 @@ export function composeRegistrationEmail(args: {
     host: args.session.host,
     studio: s.regEmailFromName,
   };
+  let body = renderTemplate(s.regEmailBody, vars);
+  // Append real payment details (link + GCash/bank) for paid classes so the
+  // student can settle right away instead of waiting for a manual follow-up.
+  if (priceText !== "Free") {
+    const payLines: string[] = [];
+    if (s.paymentLink.trim()) payLines.push(`Pay now: ${s.paymentLink.trim()}`);
+    if (s.payGcashNumber.trim()) payLines.push(`GCash: ${s.payGcashName} — ${s.payGcashNumber}`);
+    if (s.payBankAccountNumber.trim())
+      payLines.push(`${s.payBankName}: ${s.payBankAccountName} — ${s.payBankAccountNumber}`);
+    if (payLines.length) {
+      body += `\n\n— How to pay (${priceText}) —\n${payLines.join("\n")}`;
+      if (s.paymentInstructions.trim()) body += `\n\n${s.paymentInstructions.trim()}`;
+    }
+  }
   return {
     to: args.to,
     from: s.regEmailFromName,
     subject: renderTemplate(s.regEmailSubject, vars),
-    body: renderTemplate(s.regEmailBody, vars),
+    body,
   };
 }
 

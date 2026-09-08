@@ -16,12 +16,14 @@ import {
   seatsLeft,
   isSoldOut,
   applyPromoToSession,
+  getSettings,
   PromoResult,
   SessionItem,
 } from "@/lib/store";
 import { peso } from "@/lib/format";
 import { FOUNDER } from "@/lib/content";
 import { Eyebrow, Fireflies, FairySwirl, Glow, Star } from "@/components/Motifs";
+import { PaymentDetails } from "@/components/PaymentDetails";
 
 /**
  * Shared registration landing.
@@ -193,9 +195,17 @@ function Landing({ s, others }: { s: SessionItem; others: SessionItem[] }) {
           <h1 className="mt-6 font-serif text-3xl sm:text-4xl">You’re on the list! ✦</h1>
           <p className="mt-4 text-parchment/80">
             Thanks, <span className="text-firefly-bright">{name.split(" ")[0]}</span> — your spot for{" "}
-            <strong className="text-parchment">{s.title}</strong> is saved. The Faelight team will reach out with the
-            next steps and payment details.
+            <strong className="text-parchment">{s.title}</strong> is saved.{" "}
+            {free
+              ? "The Faelight team will reach out with the next steps."
+              : "Reserve your spot by settling your payment below — then send your proof of payment and we'll confirm your seat."}
           </p>
+
+          {!free && (
+            <div className="mx-auto mt-6 max-w-md">
+              <PaymentDetails settings={getSettings()} amountLabel={peso(finalPrice)} />
+            </div>
+          )}
 
           {sentEmail && (
             <div className="mx-auto mt-6 max-w-md text-left">
