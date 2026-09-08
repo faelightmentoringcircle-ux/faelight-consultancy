@@ -841,6 +841,13 @@ export async function sendRegistrationEmail(args: {
 
   if (!emailDeliveryReady(s)) return { email, delivery: "logged" };
 
+  // A scannable QR of the pay link, as a HOSTED image URL (email clients block
+  // uploaded data-URI images, so we generate one that renders). Empty when no
+  // pay link is set, so the template's <img> just shows nothing.
+  const payQr = s.paymentLink.trim()
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeURIComponent(s.paymentLink.trim())}`
+    : "";
+
   try {
     const res = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
       method: "POST",
@@ -856,6 +863,7 @@ export async function sendRegistrationEmail(args: {
           subject: email.subject,
           message: email.body,
           reply_to: s.notifyEmail,
+          pay_qr: payQr,
         },
       }),
     });
