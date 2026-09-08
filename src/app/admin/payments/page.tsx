@@ -220,21 +220,43 @@ function PaymentDetailsEditor() {
   const update = (patch: Partial<Settings>) => { saveSettings(patch); setSaved(true); setTimeout(() => setSaved(false), 1200); };
   const input = "w-full rounded-lg border border-firefly/25 bg-white/70 px-3 py-2 text-sm outline-none focus:border-firefly";
 
-  function onQr(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 500_000) { alert("Please use an image under 500KB."); return; }
-    const reader = new FileReader();
-    reader.onload = () => update({ payGcashQr: String(reader.result) });
-    reader.readAsDataURL(file);
+  type QrField = "payGcashQr" | "payMayaQr" | "payBpiQr";
+  function uploadQr(field: QrField) {
+    return (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      if (file.size > 500_000) { alert("Please use an image under 500KB."); return; }
+      const reader = new FileReader();
+      reader.onload = () => update({ [field]: String(reader.result) } as Partial<Settings>);
+      reader.readAsDataURL(file);
+    };
   }
+  const qrBox = (field: QrField, current: string) => (
+    <div className="flex items-center gap-3">
+      <div className="grid h-24 w-24 shrink-0 place-items-center rounded-xl border border-firefly/20 bg-white">
+        {current ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={current} alt="QR" className="max-h-full max-w-full object-contain p-1" />
+        ) : (
+          <span className="text-[10px] text-ink-faint">No QR</span>
+        )}
+      </div>
+      <div className="space-y-1.5">
+        <label className="block cursor-pointer rounded-lg border border-firefly/30 px-3 py-1.5 text-center text-xs font-semibold text-forest hover:border-firefly">
+          Upload QR
+          <input type="file" accept="image/*" className="hidden" onChange={uploadQr(field)} />
+        </label>
+        {current && <button onClick={() => update({ [field]: "" } as Partial<Settings>)} className="block w-full rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50">Remove</button>}
+      </div>
+    </div>
+  );
 
   return (
     <Panel className="mb-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-serif text-lg text-forest-deep">Payment Details Clients See</h2>
-          <p className="text-xs text-ink-faint">Shown on the booking confirmation so clients can settle before their session.</p>
+          <p className="text-xs text-ink-faint">Shown on the registration &amp; booking confirmation so clients can settle before their session.</p>
         </div>
         {saved && <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Saved ✓</span>}
       </div>
@@ -244,39 +266,29 @@ function PaymentDetailsEditor() {
         <span><span className="font-semibold text-forest-deep">Require payment before the session.</span> Clients are asked to settle the fee ahead of their booking.</span>
       </label>
 
-      <div className="mt-4 grid gap-5 lg:grid-cols-3">
-        {/* QR */}
-        <div>
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-faint">GCash / e-wallet QR</p>
-          <div className="flex items-center gap-3">
-            <div className="grid h-24 w-24 shrink-0 place-items-center rounded-xl border border-firefly/20 bg-white">
-              {s.payGcashQr ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={s.payGcashQr} alt="QR" className="max-h-full max-w-full object-contain p-1" />
-              ) : (
-                <span className="text-[10px] text-ink-faint">No QR</span>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <label className="block cursor-pointer rounded-lg border border-firefly/30 px-3 py-1.5 text-center text-xs font-semibold text-forest hover:border-firefly">
-                Upload QR
-                <input type="file" accept="image/*" className="hidden" onChange={onQr} />
-              </label>
-              {s.payGcashQr && <button onClick={() => update({ payGcashQr: "" })} className="block w-full rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50">Remove</button>}
-            </div>
-          </div>
-        </div>
+      <p className="mt-5 text-xs text-ink-faint">Add a QR code and account details for each method you accept — GCash, Maya, and BPI. Each appears on the registration &amp; booking confirmation.</p>
 
+      <div className="mt-3 grid gap-5 lg:grid-cols-3">
         {/* GCash */}
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-faint">GCash</p>
+        <div className="space-y-2 rounded-xl border border-firefly/15 bg-parchment-warm/30 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-firefly-deep">GCash</p>
+          {qrBox("payGcashQr", s.payGcashQr)}
           <input className={input} defaultValue={s.payGcashName} placeholder="Account name" onBlur={(e) => update({ payGcashName: e.target.value })} />
           <input className={input} defaultValue={s.payGcashNumber} placeholder="Mobile number" onBlur={(e) => update({ payGcashNumber: e.target.value })} />
         </div>
 
-        {/* Bank */}
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-faint">Bank transfer</p>
+        {/* Maya */}
+        <div className="space-y-2 rounded-xl border border-firefly/15 bg-parchment-warm/30 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-firefly-deep">Maya</p>
+          {qrBox("payMayaQr", s.payMayaQr)}
+          <input className={input} defaultValue={s.payMayaName} placeholder="Account name" onBlur={(e) => update({ payMayaName: e.target.value })} />
+          <input className={input} defaultValue={s.payMayaNumber} placeholder="Mobile number" onBlur={(e) => update({ payMayaNumber: e.target.value })} />
+        </div>
+
+        {/* Bank / BPI */}
+        <div className="space-y-2 rounded-xl border border-firefly/15 bg-parchment-warm/30 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-firefly-deep">Bank transfer</p>
+          {qrBox("payBpiQr", s.payBpiQr)}
           <input className={input} defaultValue={s.payBankName} placeholder="Bank (e.g. BPI)" onBlur={(e) => update({ payBankName: e.target.value })} />
           <input className={input} defaultValue={s.payBankAccountName} placeholder="Account name" onBlur={(e) => update({ payBankAccountName: e.target.value })} />
           <input className={input} defaultValue={s.payBankAccountNumber} placeholder="Account number" onBlur={(e) => update({ payBankAccountNumber: e.target.value })} />

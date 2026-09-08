@@ -98,10 +98,14 @@ export interface Settings {
   requirePaymentBeforeSession: boolean;
   payGcashName: string;
   payGcashNumber: string;
-  payGcashQr: string; // data: URL of the GCash / e-wallet QR image
+  payGcashQr: string; // data: URL of the GCash QR image
+  payMayaName: string;
+  payMayaNumber: string;
+  payMayaQr: string; // data: URL of the Maya QR image
   payBankName: string;
   payBankAccountName: string;
   payBankAccountNumber: string;
+  payBpiQr: string; // data: URL of the BPI / bank QR image
   notifyEmail: string;
   // Registration confirmation email (sent to a student when they reserve a seat)
   regEmailEnabled: boolean;
@@ -347,9 +351,13 @@ export const DEFAULT_SETTINGS: Settings = {
   payGcashName: "Maria Castañeda",
   payGcashNumber: "0917 892 1280",
   payGcashQr: "",
+  payMayaName: "Maria Castañeda",
+  payMayaNumber: "0917 892 1280",
+  payMayaQr: "",
   payBankName: "BPI",
   payBankAccountName: "Maria Castañeda",
   payBankAccountNumber: "1234-5678-90",
+  payBpiQr: "",
   notifyEmail: "faelightmentoringcircle@gmail.com",
   regEmailEnabled: true,
   regEmailFromName: "Faelight Business Consultancy",
@@ -787,6 +795,7 @@ export function composeRegistrationEmail(args: {
     const payLines: string[] = [];
     if (s.paymentLink.trim()) payLines.push(`Pay now: ${s.paymentLink.trim()}`);
     if (s.payGcashNumber.trim()) payLines.push(`GCash: ${s.payGcashName} — ${s.payGcashNumber}`);
+    if (s.payMayaNumber.trim()) payLines.push(`Maya: ${s.payMayaName} — ${s.payMayaNumber}`);
     if (s.payBankAccountNumber.trim())
       payLines.push(`${s.payBankName}: ${s.payBankAccountName} — ${s.payBankAccountNumber}`);
     if (payLines.length) {
