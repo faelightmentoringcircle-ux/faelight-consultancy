@@ -27,7 +27,7 @@ export function BrandTaglinesPanel() {
   ];
   return (
     <Panel className="mb-6">
-      <h2 className="font-serif text-lg text-forest-deep">Brand &amp; taglines</h2>
+      <h2 className="font-serif text-lg text-forest-deep">Brand &amp; Taglines</h2>
       <p className="text-xs text-ink-faint">Wording shown across the public site (footer, pricing, clients section).</p>
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         {rows.map(({ key, label, area }) => (
@@ -49,7 +49,7 @@ export function BrandTaglinesPanel() {
 export function SubBrandsPanel() {
   return (
     <Panel className="mb-6">
-      <h2 className="font-serif text-lg text-forest-deep">Sub-brand pages</h2>
+      <h2 className="font-serif text-lg text-forest-deep">Sub-Brand Pages</h2>
       <p className="text-xs text-ink-faint">Name, tagline, who-it&rsquo;s-for and description on each sub-brand page (/mentoring, /systems, /experiences) and the home cards. Blank = built-in default.</p>
       <div className="mt-4 grid gap-5 lg:grid-cols-3">
         {CATEGORIES.map((base) => {
@@ -80,7 +80,7 @@ export function PageListsPanel() {
   ];
   return (
     <Panel className="mb-6">
-      <h2 className="font-serif text-lg text-forest-deep">Page content lists</h2>
+      <h2 className="font-serif text-lg text-forest-deep">Page Content Lists</h2>
       <p className="text-xs text-ink-faint">The bullet lists on the Mentoring, Systems and Experiences pages. One item per line; blank = built-in default.</p>
       <div className="mt-4 grid gap-5 md:grid-cols-2">
         {LISTS.map((l) => (
