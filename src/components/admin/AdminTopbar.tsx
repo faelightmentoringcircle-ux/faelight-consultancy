@@ -93,17 +93,6 @@ export function AdminTopbar({ user, title, onMenu }: { user: AdminUser; title: s
       </div>
 
       <div className="flex items-center gap-2">
-        {/* View public site */}
-        <Link
-          href="/"
-          target="_blank"
-          className="inline-flex items-center gap-1 rounded-full border border-firefly/30 bg-parchment-card px-3 py-1.5 text-xs font-semibold text-forest transition hover:bg-firefly/10"
-        >
-          <span aria-hidden>🌐</span>
-          <span className="hidden sm:inline">View site</span>
-          <span aria-hidden>↗</span>
-        </Link>
-
         {/* Notifications */}
         <div className="relative">
           <button
@@ -180,7 +169,10 @@ export function AdminTopbar({ user, title, onMenu }: { user: AdminUser; title: s
                   {user.email && <p className="truncate text-[11px] text-ink-soft">{user.email}</p>}
                   <p className="mt-0.5 text-[10px] uppercase tracking-wide text-firefly-deep">{user.role === "admin" ? "Admin" : "Team"}</p>
                 </div>
-                <Link href="/" className="mt-1 block rounded-lg px-3 py-2 text-sm text-ink-soft transition hover:bg-firefly/8">View site ↗</Link>
+                <Link href="/" target="_blank" onClick={() => setOpenUser(false)} className="mt-1 block rounded-lg px-3 py-2 text-sm text-ink-soft transition hover:bg-firefly/8">View site ↗</Link>
+                {isSupabaseAuth() && (
+                  <Link href="/reset" onClick={() => setOpenUser(false)} className="block rounded-lg px-3 py-2 text-sm text-ink-soft transition hover:bg-firefly/8">Change password</Link>
+                )}
                 {/* Demo-only: never show in production (Supabase) — it would wipe shared data. */}
                 {!isSupabaseAuth() && (
                   <button

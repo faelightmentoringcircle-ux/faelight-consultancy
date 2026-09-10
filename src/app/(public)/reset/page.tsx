@@ -48,7 +48,7 @@ export default function ResetPasswordPage() {
           </div>
         ) : (
           <form onSubmit={submit} className="rounded-2xl border border-firefly/20 bg-white/5 p-6 backdrop-blur">
-            <p className="mb-4 text-xs text-parchment/60">Opened from your reset email? Choose a new password below.</p>
+            <p className="mb-4 text-xs text-parchment/60">Choose a new password for your account.</p>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-firefly-bright/80">New password</label>
             <input type="password" name="new-password" autoComplete="new-password" autoFocus value={pw}
               onChange={(e) => { setPw(e.target.value); setError(""); }} placeholder="At least 6 characters" className={input} />
