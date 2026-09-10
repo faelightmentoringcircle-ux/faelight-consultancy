@@ -14,6 +14,7 @@ import {
 } from "@/lib/auth";
 import { initials } from "@/lib/format";
 import { AdminHeader, Panel } from "@/components/admin/ui";
+import { CollapsiblePanel } from "@/components/admin/CollapsiblePanel";
 import { ManagedListsPanel } from "@/components/admin/ManagedLists";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -64,11 +65,8 @@ export default function SettingsPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Booking rules */}
-        <Panel>
-          <h2 className="font-serif text-lg text-forest-deep">Booking Rules</h2>
-          <p className="text-xs text-ink-faint">Used by the public booking slot engine.</p>
-
-          <div className="mt-4">
+        <CollapsiblePanel title="Booking Rules" subtitle="Used by the public booking slot engine.">
+          <div className="mt-1">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-faint">Working days</p>
             <div className="flex flex-wrap gap-1.5">
               {DAYS.map((d, i) => (
@@ -93,15 +91,14 @@ export default function SettingsPage() {
             <NumberField label="Max advance (days)" value={s.maxAdvanceDays} min={1} max={120} onChange={(v) => update({ maxAdvanceDays: v })} />
           </div>
           <p className="mt-3 text-xs text-ink-faint">All times in Asia/Manila (GMT+8).</p>
-        </Panel>
+        </CollapsiblePanel>
 
         {/* Google connection */}
         <div className="space-y-6">
           <CalendarPanel s={s} update={update} />
 
-          <Panel>
-            <h2 className="font-serif text-lg text-forest-deep">Notifications & Payment</h2>
-            <div className="mt-3 space-y-3">
+          <CollapsiblePanel title="Notifications & Payment">
+            <div className="mt-1 space-y-3">
               <div>
                 <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-faint">Notify email (new leads & bookings)</label>
                 <input
@@ -120,12 +117,10 @@ export default function SettingsPage() {
                 />
               </div>
             </div>
-          </Panel>
+          </CollapsiblePanel>
 
-          <Panel>
-            <h2 className="font-serif text-lg text-forest-deep">Public contact info</h2>
-            <p className="text-xs text-ink-faint">Shown in the website footer (&ldquo;Get in touch&rdquo;) and on the Contact page.</p>
-            <div className="mt-3 space-y-3">
+          <CollapsiblePanel title="Public contact info" subtitle="Shown in the website footer (“Get in touch”) and on the Contact page." defaultOpen={false}>
+            <div className="mt-1 space-y-3">
               <div>
                 <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-faint">Contact name</label>
                 <input defaultValue={s.contactName} onBlur={(e) => update({ contactName: e.target.value })} className="w-full rounded-lg border border-firefly/25 bg-white/70 px-3 py-2 text-sm outline-none focus:border-firefly" placeholder="Maria Castañeda" />
@@ -139,7 +134,7 @@ export default function SettingsPage() {
                 <input defaultValue={s.contactPhone} onBlur={(e) => update({ contactPhone: e.target.value })} className="w-full rounded-lg border border-firefly/25 bg-white/70 px-3 py-2 text-sm outline-none focus:border-firefly" placeholder="+63 917 000 0000" />
               </div>
             </div>
-          </Panel>
+          </CollapsiblePanel>
         </div>
       </div>
 
@@ -172,19 +167,18 @@ function RegEmailPanel({ s, update }: { s: Settings; update: (patch: Partial<Set
   const PLACEHOLDERS = ["{name}", "{firstName}", "{class}", "{date}", "{package}", "{price}", "{host}", "{studio}"];
 
   return (
-    <Panel className="mt-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h2 className="font-serif text-lg text-forest-deep">Registration Confirmation Email</h2>
-          <p className="text-xs text-ink-faint">Automatically sent to each student when they reserve a seat — personalised with their name and class.</p>
-        </div>
+    <CollapsiblePanel
+      className="mt-6"
+      title="Registration Confirmation Email"
+      subtitle="Automatically sent to each student when they reserve a seat — personalised with their name and class."
+      action={
         <label className="flex items-center gap-2 text-xs font-semibold text-forest">
           <input type="checkbox" checked={s.regEmailEnabled} onChange={(e) => update({ regEmailEnabled: e.target.checked })} />
           {s.regEmailEnabled ? "On" : "Off"}
         </label>
-      </div>
-
-      <div className="mt-4 grid gap-6 lg:grid-cols-2">
+      }
+    >
+      <div className="mt-1 grid gap-6 lg:grid-cols-2">
         {/* Editor */}
         <div className="space-y-3">
           <div>
@@ -248,7 +242,7 @@ function RegEmailPanel({ s, update }: { s: Settings; update: (patch: Partial<Set
           </div>
         </div>
       </div>
-    </Panel>
+    </CollapsiblePanel>
   );
 }
 
@@ -317,21 +311,18 @@ function CalendarPanel({
   ];
 
   return (
-    <Panel>
-      <div className="flex items-center justify-between">
-        <h2 className="font-serif text-lg text-forest-deep">Calendar</h2>
-        <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
-          calendarReady(s) ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
-        }`}>
+    <CollapsiblePanel
+      title="Calendar"
+      subtitle={
+        <>Choose which calendar drives public booking. Active: <strong className="text-forest">{CALENDAR_LABELS[s.calendarProvider]}</strong>{" · "}{activeCalendarAccount(s)}</>
+      }
+      action={
+        <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${calendarReady(s) ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
           {calendarReady(s) ? "Booking live" : "Booking paused"}
         </span>
-      </div>
-      <p className="text-xs text-ink-faint">
-        Choose which calendar drives public booking. Active: <strong className="text-forest">{CALENDAR_LABELS[s.calendarProvider]}</strong>
-        {" · "}{activeCalendarAccount(s)}
-      </p>
-
-      <div className="mt-4 space-y-3">
+      }
+    >
+      <div className="mt-1 space-y-3">
         {providers.map((p) => {
           const active = s.calendarProvider === p.id;
           const linkable = p.id !== "default";
@@ -414,7 +405,7 @@ function CalendarPanel({
         inquiry form. In production, Connect runs the provider's OAuth flow (Google: calendar.readonly +
         calendar.events; Microsoft Graph: Calendars.ReadWrite).
       </p>
-    </Panel>
+    </CollapsiblePanel>
   );
 }
 
@@ -462,19 +453,12 @@ function TeamAccounts() {
   const inputCls = "w-full rounded-lg border border-firefly/25 bg-white/70 px-3 py-2 text-sm outline-none focus:border-firefly";
 
   return (
-    <Panel className="mt-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="font-serif text-lg text-forest-deep">Team Accounts</h2>
-          <p className="text-xs text-ink-faint">Admins manage everything; team members manage leads & bookings.</p>
-        </div>
-        {!adding && (
-          <button onClick={() => setAdding(true)} className="btn-primary !px-4 !py-2 text-sm">
-            + Add user
-          </button>
-        )}
-      </div>
-
+    <CollapsiblePanel
+      className="mt-6"
+      title="Team Accounts"
+      subtitle="Admins manage everything; team members manage leads & bookings."
+      action={!adding ? <button onClick={() => setAdding(true)} className="btn-primary !px-4 !py-2 text-sm">+ Add user</button> : undefined}
+    >
       {adding && (
         <form onSubmit={submit} className="mt-4 rounded-xl border border-firefly/25 bg-parchment-warm/50 p-4">
           <div className="grid gap-3 sm:grid-cols-2">
@@ -567,7 +551,7 @@ function TeamAccounts() {
       <p className="mt-3 text-xs text-ink-faint">
         The 7 founding accounts are protected. Team members only see the sections you assign here.
       </p>
-    </Panel>
+    </CollapsiblePanel>
   );
 }
 
