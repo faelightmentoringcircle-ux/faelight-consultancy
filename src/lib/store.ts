@@ -107,6 +107,10 @@ export interface Settings {
   payBankAccountNumber: string;
   payBpiQr: string; // data: URL of the BPI / bank QR image
   notifyEmail: string;
+  // Public contact info shown on the site footer / contact page (admin-editable)
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
   // Registration confirmation email (sent to a student when they reserve a seat)
   regEmailEnabled: boolean;
   regEmailFromName: string;
@@ -359,6 +363,9 @@ export const DEFAULT_SETTINGS: Settings = {
   payBankAccountNumber: "1234-5678-90",
   payBpiQr: "",
   notifyEmail: "faelightmentoringcircle@gmail.com",
+  contactName: "Maria Castañeda",
+  contactEmail: "faelightmentoringcircle@gmail.com",
+  contactPhone: "+63 917 892 1280",
   regEmailEnabled: true,
   regEmailFromName: "Faelight Business Consultancy",
   regEmailSubject: "You're on the list for {class} ✦",
@@ -397,7 +404,15 @@ function read<T>(key: string, fallback: T): T {
 
 function write<T>(key: string, value: T) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(key, JSON.stringify(value));
+  // Guard the local cache write: a too-large blob (e.g. base64 images) can hit
+  // the ~5MB localStorage quota and throw. If it does, DON'T abort the save —
+  // keep syncing to Supabase (which has room) and warn, so the edit isn't lost
+  // and the UI doesn't get stuck with an unsaved modal.
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    console.error(`[store] local cache write failed for ${key} (storage full?). Syncing to cloud only.`, e);
+  }
   pushKey(key, value); // sync to Supabase when configured (no-op otherwise)
   window.dispatchEvent(new CustomEvent("fae:store"));
 }

@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { Wordmark } from "./Wordmark";
-import { BRAND, CONTACT } from "@/lib/content";
+import { BRAND } from "@/lib/content";
 import { Fireflies } from "./Motifs";
 import { FooterSocial } from "./FooterSocial";
+import { FooterContact } from "./FooterContact";
 
 export function SiteFooter() {
   return (
@@ -39,12 +40,7 @@ export function SiteFooter() {
               Get in touch
             </h3>
             <ul className="mt-4 space-y-2 text-sm text-parchment/80">
-              <li>{CONTACT.name}</li>
-              <li>
-                <a href={`mailto:${CONTACT.email}`} className="hover:text-firefly-bright break-all">
-                  {CONTACT.email}
-                </a>
-              </li>
+              <FooterContact />
               <li className="pt-2">
                 <Link href="/book" className="btn-gold !px-5 !py-2.5 text-forest-deep">
                   Book a Discovery Call

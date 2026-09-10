@@ -60,11 +60,41 @@ function numOrUndef(v: string): number | undefined {
   return v.trim() === "" || isNaN(n) ? undefined : n;
 }
 
-function fileToDataUrl(file: File): Promise<string> {
+// Downscale + re-encode an uploaded image to a small JPEG data-URL. Posters can
+// be several MB; stored raw as base64 in the sessions blob they overflow the
+// ~5MB localStorage quota and break saving. Compressing keeps each image well
+// under ~300KB so the whole blob stays small. Falls back to the raw file if the
+// browser can't decode it.
+function fileToDataUrl(file: File, maxDim = 1400, quality = 0.82): Promise<string> {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
     r.onerror = reject;
+    r.onload = () => {
+      const raw = String(r.result);
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width >= height) { height = Math.round((height * maxDim) / width); width = maxDim; }
+          else { width = Math.round((width * maxDim) / height); height = maxDim; }
+        }
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return resolve(raw);
+          ctx.drawImage(img, 0, 0, width, height);
+          const out = canvas.toDataURL("image/jpeg", quality);
+          // Keep the smaller of the two (tiny/transparent PNGs may beat JPEG).
+          resolve(out.length < raw.length ? out : raw);
+        } catch {
+          resolve(raw);
+        }
+      };
+      img.onerror = () => resolve(raw);
+      img.src = raw;
+    };
     r.readAsDataURL(file);
   });
 }
@@ -128,10 +158,12 @@ export default function AdminSessionsPage() {
     setEditing(s.id);
   }
   function save() {
-    // Keep the display text in sync with structured fields when they're set.
+    // Date has no manual field, so always rebuild it from the structured date
+    // inputs. The availability note IS a manual field ("override — leave blank
+    // to auto-build"), so only auto-build it when the admin left it blank.
     const synced: Draft = { ...draft };
     if (draft.startDate) synced.date = sessionDateText({ ...draft, id: "x" } as SessionItem);
-    if (typeof draft.seatsTotal === "number") synced.detail = sessionSeatText({ ...draft, id: "x" } as SessionItem);
+    if (typeof draft.seatsTotal === "number" && !draft.detail?.trim()) synced.detail = sessionSeatText({ ...draft, id: "x" } as SessionItem);
     if (editing === "new") {
       const created = addSession(synced);
       // Point the public "Register" button at the clean per-program landing page.

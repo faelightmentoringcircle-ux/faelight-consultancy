@@ -121,6 +121,25 @@ export default function SettingsPage() {
               </div>
             </div>
           </Panel>
+
+          <Panel>
+            <h2 className="font-serif text-lg text-forest-deep">Public contact info</h2>
+            <p className="text-xs text-ink-faint">Shown in the website footer (&ldquo;Get in touch&rdquo;) and on the Contact page.</p>
+            <div className="mt-3 space-y-3">
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-faint">Contact name</label>
+                <input defaultValue={s.contactName} onBlur={(e) => update({ contactName: e.target.value })} className="w-full rounded-lg border border-firefly/25 bg-white/70 px-3 py-2 text-sm outline-none focus:border-firefly" placeholder="Maria Castañeda" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-faint">Contact email (public)</label>
+                <input type="email" defaultValue={s.contactEmail} onBlur={(e) => update({ contactEmail: e.target.value.trim() })} className="w-full rounded-lg border border-firefly/25 bg-white/70 px-3 py-2 text-sm outline-none focus:border-firefly" placeholder="admin@faelightbiz.com" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-faint">Contact phone (optional)</label>
+                <input defaultValue={s.contactPhone} onBlur={(e) => update({ contactPhone: e.target.value })} className="w-full rounded-lg border border-firefly/25 bg-white/70 px-3 py-2 text-sm outline-none focus:border-firefly" placeholder="+63 917 000 0000" />
+              </div>
+            </div>
+          </Panel>
         </div>
       </div>
 

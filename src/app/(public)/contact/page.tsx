@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CONTACT } from "@/lib/content";
 import { Eyebrow, Fireflies, Glow, Star } from "@/components/Motifs";
 import { InquiryForm } from "@/components/InquiryForm";
+import { ContactDirectRows } from "@/components/ContactDirectRows";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -33,8 +33,7 @@ export default function ContactPage() {
           <div className="lg:col-span-2">
             <h2 className="font-serif text-2xl text-forest-deep">Reach us directly</h2>
             <div className="mt-5 space-y-4">
-              <ContactRow label="Email" value={CONTACT.email} href={`mailto:${CONTACT.email}`} />
-              <ContactRow label="Founder" value={CONTACT.name} />
+              <ContactDirectRows />
             </div>
 
             <div className="mt-8 card bg-parchment-warm/60">
@@ -57,15 +56,3 @@ export default function ContactPage() {
   );
 }
 
-function ContactRow({ label, value, href }: { label: string; value: string; href?: string }) {
-  const inner = (
-    <div className="card-hover flex items-center gap-4">
-      <div className="grid h-10 w-10 place-items-center rounded-full bg-forest/8 text-firefly">✦</div>
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-ink-faint">{label}</p>
-        <p className="font-medium text-forest-deep">{value}</p>
-      </div>
-    </div>
-  );
-  return href ? <a href={href}>{inner}</a> : inner;
-}
