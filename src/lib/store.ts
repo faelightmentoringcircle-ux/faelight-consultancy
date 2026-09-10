@@ -111,6 +111,13 @@ export interface Settings {
   contactName: string;
   contactEmail: string;
   contactPhone: string;
+  // Brand voice / taglines shown across the public site (admin-editable)
+  brandEthos: string; // footer line, e.g. "People first. Systems second. Magic throughout."
+  brandCheeky: string; // footer sub-line
+  brandFooterStrip: string; // bottom strip caps
+  pricingDisclaimer: string; // shown under pricing / brochures
+  smartVaUrl: string; // "Smart VA" system link (was a dead "#")
+  experienceUrl: string; // "Experience platform" link (was a dead "#")
   // Registration confirmation email (sent to a student when they reserve a seat)
   regEmailEnabled: boolean;
   regEmailFromName: string;
@@ -366,6 +373,12 @@ export const DEFAULT_SETTINGS: Settings = {
   contactName: "Maria Castañeda",
   contactEmail: "faelightmentoringcircle@gmail.com",
   contactPhone: "+63 917 892 1280",
+  brandEthos: "People first. Systems second. Magic throughout.",
+  brandCheeky: "For businesses whose operations are held together by vibes, memory and seventeen tabs.",
+  brandFooterStrip: "FAELIGHT BUSINESS CONSULTANCY • MENTORING CIRCLE • SYSTEMS • EXPERIENCES",
+  pricingDisclaimer: "Final pricing depends on scope, audience and delivery needs.",
+  smartVaUrl: "",
+  experienceUrl: "",
   regEmailEnabled: true,
   regEmailFromName: "Faelight Business Consultancy",
   regEmailSubject: "You're on the list for {class} ✦",

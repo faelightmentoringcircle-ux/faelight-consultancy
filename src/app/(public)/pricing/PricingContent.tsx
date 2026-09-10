@@ -3,16 +3,16 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  BRAND,
   classOfferings,
   serviceOfferings,
   categoryName,
-  SMART_VA_URL,
   SMART_VA_SERVICE_ID,
 } from "@/lib/content";
+import { PricingDisclaimer } from "@/components/PublicContact";
 import {
   effectiveClassOfferings,
   effectiveServiceOfferings,
+  getSettings,
   onStoreChange,
   EffectiveService,
 } from "@/lib/store";
@@ -20,6 +20,7 @@ import { Eyebrow, Fireflies, Glow, Star } from "@/components/Motifs";
 import { ClientFit, CtaBand } from "@/components/Sections";
 
 function OfferingCard({ s }: { s: EffectiveService }) {
+  const smartVaUrl = getSettings().smartVaUrl?.trim();
   return (
     <div className="card-hover flex flex-col">
       <div className="flex items-start justify-between gap-3">
@@ -40,9 +41,9 @@ function OfferingCard({ s }: { s: EffectiveService }) {
         <p className="text-xs text-ink-faint">
           <span className="font-semibold uppercase tracking-wide">Best for:</span> {s.bestFor}
         </p>
-        {s.id === SMART_VA_SERVICE_ID ? (
+        {s.id === SMART_VA_SERVICE_ID && smartVaUrl ? (
           <a
-            href={SMART_VA_URL}
+            href={smartVaUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="shrink-0 text-xs font-semibold text-firefly-deep hover:underline"
@@ -155,7 +156,7 @@ export function PricingContent() {
 
           <p className="mt-10 text-center text-sm italic text-ink-faint">
             <Star className="mr-1 text-firefly" />
-            {BRAND.pricingDisclaimer}
+            <PricingDisclaimer />
           </p>
         </div>
       </section>

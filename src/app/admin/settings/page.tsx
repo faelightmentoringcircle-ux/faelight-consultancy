@@ -140,6 +140,29 @@ export default function SettingsPage() {
               </div>
             </div>
           </Panel>
+
+          <Panel>
+            <h2 className="font-serif text-lg text-forest-deep">Brand &amp; taglines</h2>
+            <p className="text-xs text-ink-faint">Wording shown across the public site (footer, pricing, sub-brand pages).</p>
+            <div className="mt-3 space-y-3">
+              {([
+                ["brandEthos", "Footer line (ethos)", false],
+                ["brandCheeky", "Footer sub-line", true],
+                ["brandFooterStrip", "Footer strip (bottom, caps)", false],
+                ["pricingDisclaimer", "Pricing disclaimer", true],
+                ["smartVaUrl", "“Smart VA” link (optional URL)", false],
+              ] as const).map(([key, label, isArea]) => (
+                <div key={key}>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-faint">{label}</label>
+                  {isArea ? (
+                    <textarea defaultValue={s[key]} rows={2} onBlur={(e) => update({ [key]: e.target.value } as Partial<Settings>)} className="w-full rounded-lg border border-firefly/25 bg-white/70 px-3 py-2 text-sm outline-none focus:border-firefly" />
+                  ) : (
+                    <input defaultValue={s[key]} onBlur={(e) => update({ [key]: e.target.value } as Partial<Settings>)} className="w-full rounded-lg border border-firefly/25 bg-white/70 px-3 py-2 text-sm outline-none focus:border-firefly" />
+                  )}
+                </div>
+              ))}
+            </div>
+          </Panel>
         </div>
       </div>
 

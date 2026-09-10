@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { Wordmark } from "./Wordmark";
-import { BRAND } from "@/lib/content";
 import { Fireflies } from "./Motifs";
 import { FooterSocial } from "./FooterSocial";
 import { FooterContact } from "./FooterContact";
+import { BrandEthos, BrandCheeky, BrandFooterStrip } from "./PublicContact";
 
 export function SiteFooter() {
   return (
@@ -14,10 +14,10 @@ export function SiteFooter() {
           <div className="md:col-span-2">
             <Wordmark light />
             <p className="mt-4 max-w-sm font-serif text-lg leading-snug text-parchment/90">
-              {BRAND.ethos}
+              <BrandEthos />
             </p>
             <p className="mt-3 max-w-sm text-sm text-parchment/60">
-              {BRAND.cheeky}
+              <BrandCheeky />
             </p>
           </div>
 
@@ -53,7 +53,7 @@ export function SiteFooter() {
 
         <div className="mt-14 flex flex-col items-center gap-4 border-t border-parchment/15 pt-6 text-center">
           <p className="text-[11px] font-semibold uppercase tracking-eyebrow text-parchment/70">
-            {BRAND.footerStrip}
+            <BrandFooterStrip />
           </p>
           <p className="text-xs text-parchment/45">
             © {new Date().getFullYear()} Faelight Business Consultancy · Built with a little Faelight magic ·{" "}

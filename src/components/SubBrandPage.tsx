@@ -1,6 +1,5 @@
 import Link from "next/link";
 import {
-  BRAND,
   CategorySlug,
   categoryBySlug,
 } from "@/lib/content";
@@ -8,7 +7,7 @@ import { Eyebrow, Fireflies, Glow, Star, StarDivider } from "./Motifs";
 import { StarList, CtaBand } from "./Sections";
 import { InquiryForm } from "./InquiryForm";
 import { OfferingsMenu } from "./OfferingsMenu";
-import { ContactName, ContactEmailLink } from "./PublicContact";
+import { ContactName, ContactEmailLink, PricingDisclaimer } from "./PublicContact";
 
 interface Extra {
   title: string;
@@ -105,7 +104,7 @@ export function SubBrandPage({
           <OfferingsMenu slug={slug} />
 
           <p className="mt-8 text-center text-xs italic text-ink-faint">
-            {BRAND.pricingDisclaimer}
+            <PricingDisclaimer />
           </p>
         </div>
       </section>

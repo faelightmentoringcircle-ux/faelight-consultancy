@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getSettings, onStoreChange } from "@/lib/store";
-import { CONTACT } from "@/lib/content";
+import { CONTACT, BRAND } from "@/lib/content";
 
 // Small building blocks that render the admin-editable public contact
 // (Admin → Settings → Public contact info), so every public spot stays in sync.
@@ -47,3 +47,32 @@ export function ContactEmailLink({ className, icon }: { className?: string; icon
     </a>
   );
 }
+
+// --- Editable brand voice / taglines (Admin → Settings → Brand & taglines) ---
+function useBrand() {
+  const [b, setB] = useState({
+    ethos: BRAND.ethos,
+    cheeky: BRAND.cheeky,
+    footerStrip: BRAND.footerStrip,
+    pricingDisclaimer: BRAND.pricingDisclaimer,
+  });
+  useEffect(() => {
+    const sync = () => {
+      const s = getSettings();
+      setB({
+        ethos: s.brandEthos || BRAND.ethos,
+        cheeky: s.brandCheeky || BRAND.cheeky,
+        footerStrip: s.brandFooterStrip || BRAND.footerStrip,
+        pricingDisclaimer: s.pricingDisclaimer || BRAND.pricingDisclaimer,
+      });
+    };
+    sync();
+    return onStoreChange(sync);
+  }, []);
+  return b;
+}
+
+export function BrandEthos() { return <>{useBrand().ethos}</>; }
+export function BrandCheeky() { return <>{useBrand().cheeky}</>; }
+export function BrandFooterStrip() { return <>{useBrand().footerStrip}</>; }
+export function PricingDisclaimer() { return <>{useBrand().pricingDisclaimer}</>; }
