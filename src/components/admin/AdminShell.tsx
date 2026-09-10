@@ -217,7 +217,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
         <AdminTopbar user={user} title={pageTitle} onMenu={() => setOpen(true)} />
-        <main className="flex-1 p-5 sm:p-8">
+        <main className="admin-main flex-1 p-5 sm:p-8">
           {hasAccess ? (
             readOnly ? (
               <>

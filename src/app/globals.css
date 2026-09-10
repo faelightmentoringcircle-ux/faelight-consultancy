@@ -127,3 +127,10 @@ body {
     margin: 16mm;
   }
 }
+
+/* Admin: make all section/page headers bold for a stronger, cleaner look. */
+.admin-main h1,
+.admin-main h2,
+.admin-main h3 {
+  font-weight: 700;
+}
