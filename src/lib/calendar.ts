@@ -1,10 +1,10 @@
 // =====================================================================
-// Simulated availability engine. Stands in for Google Calendar FreeBusy
-// (spec §5). Busy blocks are generated deterministically per day so the
-// "calendar" is stable across renders, then merged with real demo
-// bookings. Swap generateBusyBlocks() for a FreeBusy API call to go live.
+// Availability engine. Open slots come from the admin's per-day booking
+// hours (settings.availability), minus real bookings and calendar holds/
+// events. (The old deterministic "fake busy" generator was removed — a real
+// business shouldn't show phantom conflicts.)
 // =====================================================================
-import { Booking, Settings, CalendarEvent, ymd } from "./store";
+import { Booking, Settings, CalendarEvent, ymd, dayHoursFor } from "./store";
 
 export interface Slot {
   start: string; // ISO
@@ -17,41 +17,6 @@ interface BusyBlock {
   end: number;
 }
 
-// Simple deterministic hash so the same date always yields the same busy map
-function seedFromDate(d: Date): number {
-  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
-}
-function pseudo(seed: number): () => number {
-  let x = seed % 2147483647;
-  if (x <= 0) x += 2147483646;
-  return () => {
-    x = (x * 16807) % 2147483647;
-    return (x - 1) / 2147483646;
-  };
-}
-
-// Pretend Maia already has some meetings on any given working day.
-function generateBusyBlocks(date: Date, settings: Settings): BusyBlock[] {
-  const rng = pseudo(seedFromDate(date));
-  const blocks: BusyBlock[] = [];
-  const dayStart = settings.startHour * 60;
-  const dayEnd = settings.endHour * 60;
-
-  // 0–3 existing meetings, each 30–90 min, snapped to :00/:30
-  const count = Math.floor(rng() * 4);
-  for (let i = 0; i < count; i++) {
-    const span = dayEnd - dayStart - 60;
-    let start = dayStart + Math.floor((rng() * span) / 30) * 30;
-    const len = [30, 60, 90][Math.floor(rng() * 3)];
-    blocks.push({ start, end: Math.min(start + len, dayEnd) });
-  }
-  // A recurring "lunch / deep work" hold most days
-  if (rng() > 0.35) {
-    blocks.push({ start: 12 * 60, end: 13 * 60 });
-  }
-  return blocks;
-}
-
 function sameLocalDay(iso: string, date: Date): boolean {
   const d = new Date(iso);
   return (
@@ -61,12 +26,9 @@ function sameLocalDay(iso: string, date: Date): boolean {
   );
 }
 
-function minutesOfDay(iso: string): { start: number; end: number } {
-  const d = new Date(iso);
-  return { start: d.getHours() * 60 + d.getMinutes(), end: 0 };
-}
-
 export function isWorkingDay(date: Date, settings: Settings): boolean {
+  const dh = settings.availability?.[date.getDay()];
+  if (dh) return dh.enabled && dh.intervals.length > 0;
   return settings.workingDays.includes(date.getDay());
 }
 
@@ -92,9 +54,8 @@ export function getAvailableSlots(
   if (!withinBookingWindow(date, settings)) return [];
   if (settings.blockedDates.includes(ymd(date))) return []; // admin blocked this day
 
-  const busy = generateBusyBlocks(date, settings);
-
-  // Fold real bookings for this day into busy blocks
+  // Busy = real bookings + calendar holds/synced events for this day.
+  const busy: BusyBlock[] = [];
   bookings
     .filter((b) => b.status !== "cancelled" && sameLocalDay(b.startsAt, date))
     .forEach((b) => {
@@ -105,15 +66,12 @@ export function getAvailableSlots(
         end: e.getHours() * 60 + e.getMinutes(),
       });
     });
-
-  // Fold calendar events (personal holds + synced external events) for this day
   const key = ymd(date);
   events
     .filter((ev) => ev.date === key)
     .forEach((ev) => busy.push({ start: ev.startMin, end: ev.endMin }));
 
-  const dayStart = settings.startHour * 60;
-  const dayEnd = settings.endHour * 60;
+  const intervals = dayHoursFor(settings, date.getDay()).intervals;
   const step = 30; // offer slots on the half hour
   const buffer = settings.bufferMin;
 
@@ -121,33 +79,41 @@ export function getAvailableSlots(
   const minStart = new Date(now.getTime() + settings.minNoticeHours * 3600_000);
 
   const slots: Slot[] = [];
-  for (let t = dayStart; t + durationMin <= dayEnd; t += step) {
-    const slotStart = t;
-    const slotEnd = t + durationMin;
+  const seen = new Set<string>();
+  for (const iv of intervals) {
+    for (let t = iv.start; t + durationMin <= iv.end; t += step) {
+      const slotStart = t;
+      const slotEnd = t + durationMin;
 
-    // Respect buffer around any busy block
-    const clash = busy.some(
-      (b) => slotStart < b.end + buffer && slotEnd + buffer > b.start
-    );
-    if (clash) continue;
+      // Respect buffer around any busy block
+      const clash = busy.some(
+        (b) => slotStart < b.end + buffer && slotEnd + buffer > b.start
+      );
+      if (clash) continue;
 
-    const startDate = new Date(date);
-    startDate.setHours(Math.floor(slotStart / 60), slotStart % 60, 0, 0);
-    if (startDate < minStart) continue;
+      const startDate = new Date(date);
+      startDate.setHours(Math.floor(slotStart / 60), slotStart % 60, 0, 0);
+      if (startDate < minStart) continue;
 
-    const endDate = new Date(date);
-    endDate.setHours(Math.floor(slotEnd / 60), slotEnd % 60, 0, 0);
+      const iso = startDate.toISOString();
+      if (seen.has(iso)) continue; // overlapping intervals shouldn't double-offer
+      seen.add(iso);
 
-    slots.push({
-      start: startDate.toISOString(),
-      end: endDate.toISOString(),
-      label: startDate.toLocaleTimeString("en-PH", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      }),
-    });
+      const endDate = new Date(date);
+      endDate.setHours(Math.floor(slotEnd / 60), slotEnd % 60, 0, 0);
+
+      slots.push({
+        start: iso,
+        end: endDate.toISOString(),
+        label: startDate.toLocaleTimeString("en-PH", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        }),
+      });
+    }
   }
+  slots.sort((a, b) => (a.start < b.start ? -1 : 1));
   return slots;
 }
 

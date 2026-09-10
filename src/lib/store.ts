@@ -84,6 +84,14 @@ export interface Booking {
 
 export type CalendarProvider = "default" | "google" | "microsoft";
 
+// A weekday's bookable windows (minutes from midnight). Multiple intervals let
+// a day have, e.g., morning + afternoon with a midday gap.
+export interface DayHours {
+  enabled: boolean;
+  intervals: { start: number; end: number }[];
+}
+export type WeeklyAvailability = Record<number, DayHours>; // 0=Sun … 6=Sat
+
 export interface Settings {
   workingDays: number[]; // 0=Sun..6=Sat
   startHour: number; // 10
@@ -91,6 +99,10 @@ export interface Settings {
   bufferMin: number; // 15
   minNoticeHours: number; // 24
   maxAdvanceDays: number; // 30
+  // Per-day booking windows (0=Sun … 6=Sat). Supersedes the flat startHour/
+  // endHour for the public slot engine; startHour/endHour kept as fallback.
+  availability: WeeklyAvailability;
+  appointmentMinutes: number; // default appointment length used for slot counts
   blockedDates: string[]; // specific YYYY-MM-DD days the admin marked off
   paymentInstructions: string;
   paymentLink: string; // one-tap "Pay now" link (GCash/Maya request, PayMongo link, etc.)
@@ -402,6 +414,8 @@ export const DEFAULT_SETTINGS: Settings = {
   bufferMin: 15,
   minNoticeHours: 24,
   maxAdvanceDays: 30,
+  availability: defaultWeeklyAvailability(),
+  appointmentMinutes: 60,
   blockedDates: [],
   paymentInstructions:
     "Please settle your booking fee before your session using the details below, then send your proof of payment to faelightmentoringcircle@gmail.com. Your slot is reserved once payment is confirmed.",
@@ -452,6 +466,29 @@ export const DEFAULT_SETTINGS: Settings = {
   microsoftConnected: false,
   microsoftAccount: "",
 };
+
+// Mon–Fri 10:00–18:00 by default; weekends off. (Function declaration hoists,
+// so DEFAULT_SETTINGS can call it above.)
+export function defaultWeeklyAvailability(): WeeklyAvailability {
+  const a: WeeklyAvailability = {};
+  for (let d = 0; d < 7; d++) {
+    a[d] = { enabled: [1, 2, 3, 4, 5].includes(d), intervals: [{ start: 10 * 60, end: 18 * 60 }] };
+  }
+  return a;
+}
+// A day's hours, falling back to the legacy flat startHour/endHour for older
+// saved settings that predate per-day availability.
+export function dayHoursFor(s: Settings, weekday: number): DayHours {
+  const a = s.availability?.[weekday];
+  if (a && Array.isArray(a.intervals)) return a;
+  return { enabled: s.workingDays.includes(weekday), intervals: [{ start: s.startHour * 60, end: s.endHour * 60 }] };
+}
+// Persist availability and keep workingDays (used by the calendar + date picker)
+// derived from it, so there is one source of truth.
+export function saveAvailability(av: WeeklyAvailability) {
+  const workingDays = [0, 1, 2, 3, 4, 5, 6].filter((d) => av[d]?.enabled && av[d].intervals.length > 0);
+  saveSettings({ availability: av, workingDays });
+}
 
 // --- low-level helpers -----------------------------------------------
 function read<T>(key: string, fallback: T): T {

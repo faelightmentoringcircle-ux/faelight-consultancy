@@ -5,8 +5,8 @@ import Link from "next/link";
 import {
   getSettings, saveSettings, getBookings, getEvents, addEvent, removeEvent,
   toggleBlockedDate, isDateBlocked, onStoreChange, ymd, updateBooking,
-  calendarReady, CALENDAR_LABELS,
-  Settings, Booking, BookingStatus, CalendarEvent, EventSource,
+  calendarReady, CALENDAR_LABELS, saveAvailability, dayHoursFor, defaultWeeklyAvailability,
+  Settings, Booking, BookingStatus, CalendarEvent, EventSource, DayHours,
 } from "@/lib/store";
 import { isWorkingDay } from "@/lib/calendar";
 import { formatTime } from "@/lib/format";
@@ -63,10 +63,12 @@ export default function CalendarPage() {
   };
 
   const toggleWeekend = (day: number) => {
-    const wd = settings.workingDays.includes(day)
-      ? settings.workingDays.filter((x) => x !== day)
-      : [...settings.workingDays, day].sort();
-    saveSettings({ workingDays: wd });
+    const cur = dayHoursFor(settings, day);
+    const av = { ...(settings.availability || defaultWeeklyAvailability()) };
+    av[day] = cur.enabled
+      ? { ...cur, enabled: false }
+      : { enabled: true, intervals: cur.intervals.length ? cur.intervals : [{ start: 9 * 60, end: 17 * 60 }] };
+    saveAvailability(av);
   };
 
   return (
@@ -282,55 +284,140 @@ function SyncStrip() {
   );
 }
 
-// Booking hours + rules — surfaced here (also in Settings → Booking Rules) so
-// blocking and the daily booking window are managed on one screen. Saves live.
+// Per-day booking availability (Calendly-style). Each weekday can be off or
+// have one+ time ranges; these are exactly the windows the public booking page
+// offers. Buffer / min-notice / max-advance stay in Settings → Booking Rules.
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const APPT_OPTS = [
+  { v: 30, label: "30 min" }, { v: 45, label: "45 min" }, { v: 60, label: "1 hr" },
+  { v: 90, label: "1.5 hr" }, { v: 120, label: "2 hr" },
+];
+const TIME_OPTS: { v: number; label: string }[] = (() => {
+  const out: { v: number; label: string }[] = [];
+  for (let m = 6 * 60; m <= 21 * 60; m += 30) {
+    const h = Math.floor(m / 60), mm = m % 60;
+    const ap = h < 12 ? "AM" : "PM";
+    const h12 = ((h + 11) % 12) + 1;
+    out.push({ v: m, label: `${h12}:${String(mm).padStart(2, "0")} ${ap}` });
+  }
+  return out;
+})();
+
 function BookingHours({ settings }: { settings: Settings }) {
-  const set = (patch: Partial<Settings>) => saveSettings(patch);
+  const appt = settings.appointmentMinutes || 60;
+  const av = settings.availability || defaultWeeklyAvailability();
+
+  const setDay = (day: number, dh: DayHours) => saveAvailability({ ...av, [day]: dh });
+  const toggleDay = (day: number) => {
+    const cur = dayHoursFor(settings, day);
+    setDay(day, cur.enabled
+      ? { ...cur, enabled: false }
+      : { enabled: true, intervals: cur.intervals.length ? cur.intervals : [{ start: 9 * 60, end: 17 * 60 }] });
+  };
+  const setInterval = (day: number, idx: number, patch: Partial<{ start: number; end: number }>) => {
+    const cur = dayHoursFor(settings, day);
+    setDay(day, { ...cur, enabled: true, intervals: cur.intervals.map((iv, i) => (i === idx ? { ...iv, ...patch } : iv)) });
+  };
+  const addInterval = (day: number) => {
+    const cur = dayHoursFor(settings, day);
+    const last = cur.intervals[cur.intervals.length - 1];
+    const start = last ? Math.min(last.end + 60, 20 * 60) : 9 * 60;
+    setDay(day, { enabled: true, intervals: [...cur.intervals, { start, end: Math.min(start + 60, 21 * 60) }] });
+  };
+  const removeInterval = (day: number, idx: number) => {
+    const cur = dayHoursFor(settings, day);
+    const intervals = cur.intervals.filter((_, i) => i !== idx);
+    setDay(day, intervals.length ? { ...cur, intervals } : { enabled: false, intervals: [] });
+  };
+  const copyMonToWeekdays = () => {
+    const mon = dayHoursFor(settings, 1);
+    const next = { ...av };
+    [2, 3, 4, 5].forEach((d) => { next[d] = { enabled: mon.enabled, intervals: mon.intervals.map((iv) => ({ ...iv })) }; });
+    saveAvailability(next);
+  };
+  const slotCount = (dh: DayHours) =>
+    dh.enabled ? dh.intervals.reduce((n, iv) => n + Math.max(0, Math.floor((iv.end - iv.start) / appt)), 0) : 0;
+
   return (
     <Panel>
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 className="font-serif text-lg text-forest-deep">Booking hours</h2>
-          <p className="text-xs text-ink-soft">The daily window &amp; rules the public booking page uses to offer slots.</p>
+          <p className="max-w-xl text-xs text-ink-soft">
+            Set the hours clients can book a consultation for. These are exactly the times shown on your website’s booking form — a client can only pick a slot that falls inside them.
+          </p>
         </div>
-        <Link href="/admin/settings" className="text-xs font-semibold text-firefly-deep hover:underline">More booking rules →</Link>
+        <Link href="/admin/settings" className="text-xs font-semibold text-firefly-deep hover:underline">Buffer &amp; notice rules →</Link>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <NumberField label="Start hour" value={settings.startHour} min={0} max={23} suffix=":00" onChange={(v) => set({ startHour: v })} />
-        <NumberField label="End hour" value={settings.endHour} min={1} max={24} suffix=":00" onChange={(v) => set({ endHour: v })} />
-        <NumberField label="Buffer (min)" value={settings.bufferMin} min={0} max={60} step={5} onChange={(v) => set({ bufferMin: v })} />
-        <NumberField label="Min notice (hrs)" value={settings.minNoticeHours} min={0} max={168} onChange={(v) => set({ minNoticeHours: v })} />
-        <NumberField label="Max advance (days)" value={settings.maxAdvanceDays} min={1} max={120} onChange={(v) => set({ maxAdvanceDays: v })} />
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-b border-firefly/15 pb-4">
+        <label className="flex items-center gap-2 text-sm">
+          <span className="font-semibold text-forest-deep">Appointment length</span>
+          <select
+            value={appt}
+            onChange={(e) => saveSettings({ appointmentMinutes: Number(e.target.value) })}
+            className="rounded-lg border border-firefly/25 bg-white px-3 py-1.5 text-sm outline-none focus:border-firefly"
+          >
+            {APPT_OPTS.map((o) => <option key={o.v} value={o.v}>{o.label}</option>)}
+          </select>
+        </label>
+        <button onClick={copyMonToWeekdays} className="rounded-full border border-firefly/30 px-3 py-1.5 text-xs font-semibold text-forest hover:bg-firefly/10">
+          Copy Monday to weekdays
+        </button>
       </div>
+
+      <div className="mt-1 divide-y divide-firefly/10">
+        {[0, 1, 2, 3, 4, 5, 6].map((day) => {
+          const dh = dayHoursFor(settings, day);
+          return (
+            <div key={day} className="flex flex-wrap items-start gap-x-3 gap-y-2 py-3">
+              <label className="flex w-28 shrink-0 items-center gap-2 pt-1.5">
+                <input type="checkbox" checked={dh.enabled} onChange={() => toggleDay(day)} className="h-4 w-4 accent-forest" />
+                <span className={`text-sm font-semibold ${dh.enabled ? "text-forest-deep" : "text-ink-faint"}`}>{DAY_NAMES[day]}</span>
+              </label>
+
+              {!dh.enabled ? (
+                <div className="flex items-center gap-3 pt-1.5">
+                  <span className="text-sm text-ink-faint">Day off</span>
+                  <button onClick={() => toggleDay(day)} className="text-xs font-semibold text-firefly-deep hover:underline">+ Add hours</button>
+                </div>
+              ) : (
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  {dh.intervals.map((iv, idx) => (
+                    <div key={idx} className="flex flex-wrap items-center gap-2">
+                      <TimeSelect value={iv.start} onChange={(v) => setInterval(day, idx, { start: v })} />
+                      <span className="text-xs text-ink-faint">to</span>
+                      <TimeSelect value={iv.end} onChange={(v) => setInterval(day, idx, { end: v })} />
+                      <button onClick={() => removeInterval(day, idx)} title="Remove range" className="grid h-6 w-6 place-items-center rounded text-rose-500 hover:bg-rose-50">✕</button>
+                      <button onClick={() => addInterval(day)} title="Add another range" className="grid h-6 w-6 place-items-center rounded text-forest hover:bg-firefly/10">+</button>
+                      {iv.end <= iv.start && <span className="text-[11px] font-semibold text-rose-600">end must be after start</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <span className="ml-auto pt-1.5 text-xs text-ink-faint">{slotCount(dh)} slots</span>
+            </div>
+          );
+        })}
+      </div>
+
       <p className="mt-3 text-[11px] text-ink-faint">
-        Slots run {settings.startHour}:00–{settings.endHour}:00 on working days, with a {settings.bufferMin}-min gap between sessions. Tip: click a weekday header above to mark it non-working.
+        “Slots” is the rough capacity per day at the appointment length above. The public page still offers start times every 30 minutes and hides anything already booked or held.
       </p>
     </Panel>
   );
 }
 
-function NumberField({
-  label, value, onChange, min, max, step = 1, suffix,
-}: {
-  label: string; value: number; onChange: (v: number) => void;
-  min?: number; max?: number; step?: number; suffix?: string;
-}) {
+function TimeSelect({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (
-    <div>
-      <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-faint">{label}</label>
-      <div className="flex items-center gap-1">
-        <input
-          type="number"
-          value={value}
-          min={min}
-          max={max}
-          step={step}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="w-full rounded-lg border border-firefly/25 bg-white px-3 py-2 text-sm outline-none focus:border-firefly"
-        />
-        {suffix && <span className="text-xs text-ink-faint">{suffix}</span>}
-      </div>
-    </div>
+    <select
+      value={value}
+      onChange={(e) => onChange(Number(e.target.value))}
+      className="rounded-lg border border-firefly/25 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-firefly"
+    >
+      {TIME_OPTS.map((o) => <option key={o.v} value={o.v}>{o.label}</option>)}
+    </select>
   );
 }
 

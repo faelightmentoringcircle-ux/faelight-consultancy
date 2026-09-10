@@ -17,8 +17,6 @@ import { AdminHeader, Panel } from "@/components/admin/ui";
 import { CollapsiblePanel } from "@/components/admin/CollapsiblePanel";
 import { ManagedListsPanel } from "@/components/admin/ManagedLists";
 
-const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
 export default function SettingsPage() {
   const { isAdmin, ready } = useAuth();
   const [s, setS] = useState<Settings | null>(null);
@@ -48,13 +46,6 @@ export default function SettingsPage() {
     setTimeout(() => setSaved(false), 1500);
   };
 
-  const toggleDay = (d: number) => {
-    const days = s.workingDays.includes(d)
-      ? s.workingDays.filter((x) => x !== d)
-      : [...s.workingDays, d].sort();
-    update({ workingDays: days });
-  };
-
   return (
     <>
       <AdminHeader
@@ -66,26 +57,15 @@ export default function SettingsPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Booking rules */}
         <CollapsiblePanel title="Booking Rules" subtitle="Used by the public booking slot engine.">
-          <div className="mt-1">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-faint">Working days</p>
-            <div className="flex flex-wrap gap-1.5">
-              {DAYS.map((d, i) => (
-                <button
-                  key={d}
-                  onClick={() => toggleDay(i)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                    s.workingDays.includes(i) ? "bg-forest text-parchment" : "bg-firefly/10 text-ink-faint hover:bg-firefly/20"
-                  }`}
-                >
-                  {d}
-                </button>
-              ))}
-            </div>
+          <div className="mt-1 rounded-xl border border-firefly/20 bg-parchment-warm/40 p-3">
+            <p className="text-xs text-ink-soft">
+              Working days &amp; hours are now set per day under{" "}
+              <Link href="/admin/calendar" className="font-semibold text-firefly-deep hover:underline">Schedule → Booking hours</Link>.
+              The rules below apply on top of them.
+            </p>
           </div>
 
           <div className="mt-4 grid grid-cols-2 gap-3">
-            <NumberField label="Start hour" value={s.startHour} min={0} max={23} onChange={(v) => update({ startHour: v })} suffix=":00" />
-            <NumberField label="End hour" value={s.endHour} min={1} max={24} onChange={(v) => update({ endHour: v })} suffix=":00" />
             <NumberField label="Buffer between (min)" value={s.bufferMin} min={0} max={60} step={5} onChange={(v) => update({ bufferMin: v })} />
             <NumberField label="Min notice (hours)" value={s.minNoticeHours} min={0} max={168} onChange={(v) => update({ minNoticeHours: v })} />
             <NumberField label="Max advance (days)" value={s.maxAdvanceDays} min={1} max={120} onChange={(v) => update({ maxAdvanceDays: v })} />
