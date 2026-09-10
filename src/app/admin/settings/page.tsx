@@ -254,26 +254,64 @@ function CalendarPanel({
   update: (patch: Partial<Settings>) => void;
 }) {
   const [connecting, setConnecting] = useState<CalendarProvider | null>(null);
+  const [gMsg, setGMsg] = useState<string>("");
 
-  // Simulate an OAuth connect flow (Google / Microsoft).
+  // Real Google status: is it connected (server-side), and to which account?
+  useEffect(() => {
+    fetch("/api/google/status")
+      .then((r) => r.json())
+      .then((d: { configured: boolean; connected: boolean; email: string | null }) => {
+        if (d.connected) {
+          if (!s.googleConnected || s.googleAccount !== (d.email || "")) {
+            update({ googleConnected: true, googleAccount: d.email || "Google Calendar" });
+          }
+        } else if (s.googleConnected) {
+          update({ googleConnected: false, googleAccount: "" });
+        }
+      })
+      .catch(() => {});
+    // one-time message after the OAuth redirect back to Settings
+    const q = new URLSearchParams(window.location.search).get("google");
+    if (q) {
+      setGMsg(
+        q === "connected" ? "✓ Google Calendar connected."
+        : q === "denied" ? "That Google account isn’t allowed. Use your Faelight Google account."
+        : q === "notconfigured" ? "Google isn’t set up yet — add the Vercel env vars first."
+        : q === "noretoken" ? "Google didn’t return a refresh token — try Connect again."
+        : "Couldn’t connect to Google. Please try again.",
+      );
+      window.history.replaceState({}, "", "/admin/settings");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Google uses the real OAuth flow; Microsoft stays simulated for now.
   function connect(provider: "google" | "microsoft") {
+    if (provider === "google") {
+      window.location.href = "/api/google/connect";
+      return;
+    }
     setConnecting(provider);
     setTimeout(() => {
-      if (provider === "google") {
-        update({
-          googleConnected: true,
-          googleAccount: s.googleAccount || "maia@faelight.ph",
-          calendarProvider: "google",
-        });
-      } else {
-        update({
-          microsoftConnected: true,
-          microsoftAccount: s.microsoftAccount || "maia@faelight.onmicrosoft.com",
-          calendarProvider: "microsoft",
-        });
-      }
+      update({
+        microsoftConnected: true,
+        microsoftAccount: s.microsoftAccount || "maia@faelight.onmicrosoft.com",
+        calendarProvider: "microsoft",
+      });
       setConnecting(null);
     }, 900);
+  }
+
+  async function disconnectGoogle() {
+    try {
+      const { supabase } = await import("@/lib/supabase");
+      const token = supabase ? (await supabase.auth.getSession()).data.session?.access_token : undefined;
+      await fetch("/api/google/disconnect", { method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    } catch {
+      /* ignore */
+    }
+    update({ googleConnected: false, googleAccount: "", ...(s.calendarProvider === "google" ? { calendarProvider: "default" as CalendarProvider } : {}) });
+    setGMsg("Google Calendar disconnected.");
   }
 
   const providers: {
@@ -322,7 +360,10 @@ function CalendarPanel({
         </span>
       }
     >
-      <div className="mt-1 space-y-3">
+      {gMsg && (
+        <div className="mt-1 rounded-lg border border-firefly/25 bg-firefly/10 px-3 py-2 text-xs font-semibold text-forest-deep">{gMsg}</div>
+      )}
+      <div className="mt-3 space-y-3">
         {providers.map((p) => {
           const active = s.calendarProvider === p.id;
           const linkable = p.id !== "default";
@@ -379,10 +420,8 @@ function CalendarPanel({
                     {linkable && p.connected && (
                       <button
                         onClick={() => {
-                          const patch: Partial<Settings> = p.id === "google"
-                            ? { googleConnected: false }
-                            : { microsoftConnected: false };
-                          // if disconnecting the active calendar, fall back to default
+                          if (p.id === "google") { disconnectGoogle(); return; }
+                          const patch: Partial<Settings> = { microsoftConnected: false };
                           if (active) patch.calendarProvider = "default";
                           update(patch);
                         }}

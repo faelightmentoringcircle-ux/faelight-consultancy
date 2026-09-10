@@ -128,6 +128,23 @@ export default function BookPage() {
       feeLabel: bookingType.feeLabel,
     });
     setConfirmed(bk);
+
+    // If the studio connected Google Calendar, create a real event with a Meet
+    // link + client invite (server returns ok:false when not connected).
+    fetch("/api/google/create-event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        summary: `${bookingType.name} — ${details.name}`,
+        description: details.agenda ? `Agenda: ${details.agenda}` : undefined,
+        startISO: slot.start,
+        endISO: slot.end,
+        attendeeEmail: details.email,
+      }),
+    })
+      .then((r) => r.json())
+      .then((d) => { if (d?.ok && d.meetLink) updateBooking(bk.id, { meetLink: d.meetLink }); })
+      .catch(() => {});
   }
 
   if (confirmed) {
