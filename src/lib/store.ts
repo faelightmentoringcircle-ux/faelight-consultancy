@@ -203,8 +203,24 @@ const KEYS = {
   notifRead: "fae.notifread.v1",
   customServices: "fae.customservices.v1",
   categoryOverrides: "fae.categoryoverrides.v1",
+  listOverrides: "fae.listoverrides.v1",
   seeded: "fae.seeded.v1",
 };
+
+// --- Editable page bullet-lists (marketing copy overrides) ------------
+// Each list has a stable id; the admin can override the seed items.
+export function getListOverrides(): Record<string, string[]> {
+  return read<Record<string, string[]>>(KEYS.listOverrides, {});
+}
+/** The items for a list — the admin override if set, else the seed. */
+export function getEffectiveList(id: string, seed: string[]): string[] {
+  const ov = getListOverrides()[id];
+  return ov && ov.length ? ov : seed;
+}
+export function saveListOverride(id: string, items: string[]) {
+  const all = getListOverrides();
+  write(KEYS.listOverrides, { ...all, [id]: items.map((s) => s.trim()).filter(Boolean) });
+}
 
 // --- Sub-brand categories: admin-editable text overrides (name/tagline/etc.) ---
 export interface CategoryOverride {

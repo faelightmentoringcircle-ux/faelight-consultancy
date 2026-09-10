@@ -9,10 +9,12 @@ import { InquiryForm } from "./InquiryForm";
 import { OfferingsMenu } from "./OfferingsMenu";
 import { ContactName, ContactEmailLink, PricingDisclaimer } from "./PublicContact";
 import { CatName, CatTagline, CatAudience } from "./CategoryText";
+import { EditableStarList } from "./EditableStarList";
 
 interface Extra {
   title: string;
   items: string[];
+  id?: string; // when set, the list is admin-editable (Page content lists)
 }
 
 // On-dark (all-gold) variants — legible floating on the enchanted hero.
@@ -85,7 +87,11 @@ export function SubBrandPage({
           <div className={`grid gap-10 ${lists.length > 1 ? "lg:grid-cols-2" : ""}`}>
             {lists.map((l) => (
               <div key={l.title} className="card">
-                <StarList title={l.title} items={l.items} />
+                {l.id ? (
+                  <EditableStarList id={l.id} title={l.title} seed={l.items} />
+                ) : (
+                  <StarList title={l.title} items={l.items} />
+                )}
               </div>
             ))}
           </div>

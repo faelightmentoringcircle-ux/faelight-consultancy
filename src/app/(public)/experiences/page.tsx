@@ -13,7 +13,7 @@ export default function ExperiencesPage() {
     <SubBrandPage
       slug="experiences"
       lead="Virtual team-building, story-led workshops and community events for remote teams and communities who want real connection — designed with facilitation, visuals and flow, and just enough magic."
-      lists={[{ title: "What we create", items: EXPERIENCES_CREATE }]}
+      lists={[{ id: "experiences-create", title: "What we create", items: EXPERIENCES_CREATE }]}
       bestForLine="Best for remote teams and communities who want connection that actually lands — warm, story-led experiences people remember long after the call ends."
     />
   );
