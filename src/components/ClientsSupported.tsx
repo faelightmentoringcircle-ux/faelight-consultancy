@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getActiveBrands, onStoreChange, BRAND_GROUPS, Brand } from "@/lib/store";
+import { getActiveBrands, getSettings, onStoreChange, BRAND_GROUPS, Brand } from "@/lib/store";
 import { CLIENTS_TAGLINE } from "@/lib/content";
 import { Eyebrow, Fireflies, Glow, StarDivider } from "./Motifs";
 
@@ -14,8 +14,9 @@ const GLYPH: Record<string, string> = {
 
 export function ClientsSupported() {
   const [brands, setBrands] = useState<Brand[]>([]);
+  const [tagline, setTagline] = useState(CLIENTS_TAGLINE);
   useEffect(() => {
-    const sync = () => setBrands(getActiveBrands());
+    const sync = () => { setBrands(getActiveBrands()); setTagline(getSettings().clientsTagline || CLIENTS_TAGLINE); };
     sync();
     return onStoreChange(sync);
   }, []);
@@ -73,7 +74,7 @@ export function ClientsSupported() {
         </div>
 
         <p className="mt-8 text-center text-xs font-semibold uppercase tracking-eyebrow text-firefly-bright/80">
-          {CLIENTS_TAGLINE}
+          {tagline}
         </p>
       </div>
     </section>

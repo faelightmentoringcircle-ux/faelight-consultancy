@@ -116,6 +116,7 @@ export interface Settings {
   brandCheeky: string; // footer sub-line
   brandFooterStrip: string; // bottom strip caps
   pricingDisclaimer: string; // shown under pricing / brochures
+  clientsTagline: string; // "Clients & brands we support" tagline
   smartVaUrl: string; // "Smart VA" system link (was a dead "#")
   experienceUrl: string; // "Experience platform" link (was a dead "#")
   // Registration confirmation email (sent to a student when they reserve a seat)
@@ -424,6 +425,7 @@ export const DEFAULT_SETTINGS: Settings = {
   brandCheeky: "For businesses whose operations are held together by vibes, memory and seventeen tabs.",
   brandFooterStrip: "FAELIGHT BUSINESS CONSULTANCY • MENTORING CIRCLE • SYSTEMS • EXPERIENCES",
   pricingDisclaimer: "Final pricing depends on scope, audience and delivery needs.",
+  clientsTagline: "Guided by purpose. Elevated by magic.",
   smartVaUrl: "",
   experienceUrl: "",
   regEmailEnabled: true,

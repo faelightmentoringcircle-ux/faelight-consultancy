@@ -16,8 +16,9 @@ import { CATEGORIES, CategorySlug } from "@/lib/content";
 import { formatDateTime, relativeDay, formatDateShort } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 import { AdminHeader, Panel, StatTile } from "@/components/admin/ui";
+import { SiteContentPanels } from "@/components/admin/SiteContentPanels";
 
-type Tab = "overview" | "email" | "calendar" | "social" | "content" | "promos" | "brands";
+type Tab = "overview" | "email" | "calendar" | "social" | "content" | "promos" | "brands" | "sitecopy";
 
 export default function MarketingPage() {
   const [tab, setTab] = useState<Tab>("overview");
@@ -36,6 +37,7 @@ export default function MarketingPage() {
           ["content", "▶ Videos & Intros"],
           ["promos", "🏷 Promotions"],
           ["brands", "✦ Brands & Clients"],
+          ["sitecopy", "✎ Site Copy"],
         ] as [Tab, string][]).map(([t, label]) => (
           <button
             key={t}
@@ -56,6 +58,7 @@ export default function MarketingPage() {
       {tab === "content" && <VideosIntros />}
       {tab === "promos" && <Promotions />}
       {tab === "brands" && <BrandsManager />}
+      {tab === "sitecopy" && <SiteContentPanels />}
     </>
   );
 }
