@@ -8,7 +8,7 @@ import {
   getBlogTagOptions, setBlogTagOptions,
   getBrandGroupOptions, setBrandGroupOptions,
 } from "@/lib/store";
-import { Panel } from "@/components/admin/ui";
+import { CollapsiblePanel } from "@/components/admin/CollapsiblePanel";
 
 // One editable option list (chips + add). Used for the small admin dropdowns.
 function ListManager({ title, description, get, set }: {
@@ -47,15 +47,13 @@ function ListManager({ title, description, get, set }: {
 // Central place to curate the small dropdown option lists used around the admin.
 export function ManagedListsPanel() {
   return (
-    <Panel className="mt-6">
-      <h2 className="font-serif text-xl text-forest-deep">Dropdown option lists</h2>
-      <p className="mt-1 text-xs text-ink-faint">Curate the choices that appear in dropdowns around the admin. Add or remove options anytime.</p>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+    <CollapsiblePanel className="mt-6" title="Dropdown option lists" subtitle="Curate the choices that appear in dropdowns around the admin. Add or remove options anytime." defaultOpen={false}>
+      <div className="mt-1 grid gap-3 sm:grid-cols-2">
         <ListManager title="Lead sources" description="Contacts & Registrations — where a lead came from." get={getLeadSourceOptions} set={setLeadSourceOptions} />
         <ListManager title="Registration tiers" description="Registrations — Regular / VIP / Scholar, etc." get={getRegTierOptions} set={setRegTierOptions} />
         <ListManager title="Blog tags" description="Blog — the tag choices for posts." get={getBlogTagOptions} set={setBlogTagOptions} />
         <ListManager title="Brand groups" description="Marketing → Brands — the group buckets." get={getBrandGroupOptions} set={setBrandGroupOptions} />
       </div>
-    </Panel>
+    </CollapsiblePanel>
   );
 }
