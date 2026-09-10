@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
   const email = await fetchGoogleEmail(tokens.access_token);
   if (email && !allowedGoogleEmails().includes(email.toLowerCase())) return back("denied");
 
-  await saveIntegration(tokens.refresh_token, email);
+  const storeErr = await saveIntegration(tokens.refresh_token, email);
+  if (storeErr) return back("storefail");
   return back("connected");
 }

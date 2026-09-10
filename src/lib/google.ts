@@ -74,16 +74,34 @@ export async function fetchGoogleEmail(accessToken: string): Promise<string | nu
   return (j.email as string) ?? null;
 }
 
-export async function saveIntegration(refresh_token: string, email: string | null) {
-  await admin().from("google_integration").upsert({ id: "default", refresh_token, email, updated_at: new Date().toISOString() });
+export async function saveIntegration(refresh_token: string, email: string | null): Promise<string | null> {
+  const { error } = await admin()
+    .from("google_integration")
+    .upsert({ id: "default", refresh_token, email, updated_at: new Date().toISOString() }, { onConflict: "id" });
+  if (error) {
+    console.error("[google] saveIntegration failed:", error.message);
+    return error.message;
+  }
+  return null;
 }
 export async function getIntegration() {
-  const { data } = await admin()
+  const { data, error } = await admin()
     .from("google_integration")
     .select("refresh_token,email,calendar_id")
     .eq("id", "default")
     .maybeSingle();
+  if (error) { console.error("[google] getIntegration failed:", error.message); return null; }
   return (data as { refresh_token: string; email: string | null; calendar_id: string } | null) ?? null;
+}
+/** Status + any read error, for the /status endpoint's diagnostics. */
+export async function checkIntegration(): Promise<{ connected: boolean; email: string | null; error: string | null }> {
+  const { data, error } = await admin()
+    .from("google_integration")
+    .select("email")
+    .eq("id", "default")
+    .maybeSingle();
+  if (error) return { connected: false, email: null, error: error.message };
+  return { connected: !!data, email: (data?.email as string) ?? null, error: null };
 }
 export async function deleteIntegration() {
   await admin().from("google_integration").delete().eq("id", "default");
