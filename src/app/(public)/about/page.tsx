@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CONTACT } from "@/lib/content";
 import { Eyebrow, Fireflies, Glow, StarDivider } from "@/components/Motifs";
+import { ContactNameEmail } from "@/components/PublicContact";
 import { AboutTeam } from "@/components/AboutTeam";
 import { AboutFounder } from "@/components/AboutFounder";
 import { AboutProjectTeams } from "@/components/AboutProjectTeams";
@@ -94,7 +94,7 @@ export default function AboutPage() {
             <div>
               <p className="font-serif text-xl text-forest-deep">Want to work with us?</p>
               <p className="text-sm text-ink-soft">
-                {CONTACT.name} · {CONTACT.email}
+                <ContactNameEmail />
               </p>
             </div>
             <div className="flex gap-3">

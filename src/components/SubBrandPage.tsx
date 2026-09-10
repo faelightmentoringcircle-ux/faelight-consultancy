@@ -3,12 +3,12 @@ import {
   BRAND,
   CategorySlug,
   categoryBySlug,
-  CONTACT,
 } from "@/lib/content";
 import { Eyebrow, Fireflies, Glow, Star, StarDivider } from "./Motifs";
 import { StarList, CtaBand } from "./Sections";
 import { InquiryForm } from "./InquiryForm";
 import { OfferingsMenu } from "./OfferingsMenu";
+import { ContactName, ContactEmailLink } from "./PublicContact";
 
 interface Extra {
   title: string;
@@ -139,12 +139,12 @@ export function SubBrandPage({
               <p className="flex items-center gap-2 font-serif text-base text-firefly-bright">
                 <Star /> Prefer to reach out directly?
               </p>
-              <p className="mt-3 text-sm font-medium text-parchment">{CONTACT.name}</p>
+              <p className="mt-3 text-sm font-medium text-parchment"><ContactName /></p>
               <div className="mt-2 space-y-1.5 text-sm">
-                <a href={`mailto:${CONTACT.email}`} className="flex items-center gap-2 text-parchment/85 transition hover:text-firefly-bright">
-                  <span className="text-firefly">✉</span>
-                  <span className="break-all">{CONTACT.email}</span>
-                </a>
+                <ContactEmailLink
+                  className="flex items-center gap-2 text-parchment/85 transition hover:text-firefly-bright"
+                  icon={<span className="text-firefly">✉</span>}
+                />
               </div>
             </div>
           </div>
