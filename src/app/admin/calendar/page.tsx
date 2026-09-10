@@ -31,6 +31,7 @@ export default function CalendarPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [cursor, setCursor] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
   const [selected, setSelected] = useState<Date | null>(null);
+  const [view, setView] = useState<"calendar" | "hours">("calendar");
 
   useEffect(() => {
     const sync = () => { setSettings(getSettings()); setBookings(getBookings()); setEvents(getEvents()); };
@@ -88,23 +89,38 @@ export default function CalendarPage() {
       {/* Sync strip — real Google Calendar status */}
       <SyncStrip />
 
-      {/* Booking hours — the window the public booking page offers */}
-      <div className="mt-6">
-        <BookingHours settings={settings} />
-      </div>
-
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
-        {/* Calendar */}
+        {/* Calendar / Booking hours (toggled by the tab next to Today) */}
         <Panel className="lg:col-span-2">
-          <div className="flex items-center justify-between">
-            <h2 className="font-serif text-lg text-forest-deep">{MONTHS[cursor.m]} {cursor.y}</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-serif text-lg text-forest-deep">
+              {view === "hours" ? "Booking hours" : `${MONTHS[cursor.m]} ${cursor.y}`}
+            </h2>
             <div className="flex items-center gap-1">
-              <button onClick={() => shiftMonth(-1)} className="grid h-8 w-8 place-items-center rounded-lg border border-firefly/25 text-forest hover:border-firefly">‹</button>
-              <button onClick={() => { const d = new Date(); setCursor({ y: d.getFullYear(), m: d.getMonth() }); }} className="rounded-lg border border-firefly/25 px-3 py-1.5 text-xs font-semibold text-forest hover:border-firefly">Today</button>
-              <button onClick={() => shiftMonth(1)} className="grid h-8 w-8 place-items-center rounded-lg border border-firefly/25 text-forest hover:border-firefly">›</button>
+              {view === "calendar" && (
+                <>
+                  <button onClick={() => shiftMonth(-1)} className="grid h-8 w-8 place-items-center rounded-lg border border-firefly/25 text-forest hover:border-firefly">‹</button>
+                  <button onClick={() => { const d = new Date(); setCursor({ y: d.getFullYear(), m: d.getMonth() }); }} className="rounded-lg border border-firefly/25 px-3 py-1.5 text-xs font-semibold text-forest hover:border-firefly">Today</button>
+                  <button onClick={() => shiftMonth(1)} className="grid h-8 w-8 place-items-center rounded-lg border border-firefly/25 text-forest hover:border-firefly">›</button>
+                </>
+              )}
+              <button
+                onClick={() => setView((v) => (v === "hours" ? "calendar" : "hours"))}
+                className={`ml-1 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                  view === "hours"
+                    ? "border-forest bg-forest text-parchment hover:bg-forest-deep"
+                    : "border-firefly/25 text-forest hover:border-firefly"
+                }`}
+              >
+                {view === "hours" ? "‹ Calendar" : "◷ Booking hours"}
+              </button>
             </div>
           </div>
 
+          {view === "hours" ? (
+            <BookingHours settings={settings} />
+          ) : (
+          <>
           {/* weekday header + weekend toggles */}
           <div className="mt-4 grid grid-cols-7 gap-1.5">
             {WD.map((d, i) => {
@@ -170,6 +186,8 @@ export default function CalendarPage() {
             <Legend className="bg-forest/40" label="◷ Bookings" />
             <Legend className="bg-firefly" label="✦ Holds / events" />
           </div>
+          </>
+          )}
         </Panel>
 
         {/* Day detail */}
@@ -339,15 +357,12 @@ function BookingHours({ settings }: { settings: Settings }) {
     dh.enabled ? dh.intervals.reduce((n, iv) => n + Math.max(0, Math.floor((iv.end - iv.start) / appt)), 0) : 0;
 
   return (
-    <Panel>
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h2 className="font-serif text-lg text-forest-deep">Booking hours</h2>
-          <p className="max-w-xl text-xs text-ink-soft">
-            Set the hours clients can book a consultation for. These are exactly the times shown on your website’s booking form — a client can only pick a slot that falls inside them.
-          </p>
-        </div>
-        <Link href="/admin/settings" className="text-xs font-semibold text-firefly-deep hover:underline">Buffer &amp; notice rules →</Link>
+    <>
+      <div className="mt-3 flex flex-wrap items-start justify-between gap-2">
+        <p className="max-w-xl text-xs text-ink-soft">
+          Set the hours clients can book a consultation for — exactly the times your website’s booking form offers.
+        </p>
+        <Link href="/admin/settings" className="shrink-0 text-xs font-semibold text-firefly-deep hover:underline">Buffer &amp; notice rules →</Link>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-b border-firefly/15 pb-4">
@@ -405,7 +420,7 @@ function BookingHours({ settings }: { settings: Settings }) {
       <p className="mt-3 text-[11px] text-ink-faint">
         “Slots” is the rough capacity per day at the appointment length above. The public page still offers start times every 30 minutes and hides anything already booked or held.
       </p>
-    </Panel>
+    </>
   );
 }
 
