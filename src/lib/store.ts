@@ -5,7 +5,7 @@
 // =====================================================================
 "use client";
 
-import { CategorySlug, SessionItem, SessionPromo, SessionDay, SESSIONS, Service, SERVICES, offeringKind, BookingType, BOOKING_TYPES, TeamMember, TEAM, FOUNDER, PROJECT_TEAMS, ProjectTeam, LEAD_SOURCES } from "./content";
+import { CategorySlug, SessionItem, SessionPromo, SessionDay, SESSIONS, Service, SERVICES, offeringKind, BookingType, BOOKING_TYPES, TeamMember, TEAM, FOUNDER, PROJECT_TEAMS, ProjectTeam, LEAD_SOURCES, CATEGORIES, ServiceCategory } from "./content";
 export type { ProjectTeam } from "./content";
 import { pushKey, submitPublic, fetchPublicSubmissions, deletePublicSubmissions, PublicSubmissionKind } from "./sync";
 import { POOL_SEED } from "./poolData";
@@ -202,8 +202,39 @@ const KEYS = {
   activity: "fae.activity.v1",
   notifRead: "fae.notifread.v1",
   customServices: "fae.customservices.v1",
+  categoryOverrides: "fae.categoryoverrides.v1",
   seeded: "fae.seeded.v1",
 };
+
+// --- Sub-brand categories: admin-editable text overrides (name/tagline/etc.) ---
+export interface CategoryOverride {
+  name?: string;
+  tagline?: string;
+  audience?: string;
+  description?: string;
+}
+export function getCategoryOverrides(): Record<string, CategoryOverride> {
+  return read<Record<string, CategoryOverride>>(KEYS.categoryOverrides, {});
+}
+export function saveCategoryOverride(slug: string, patch: CategoryOverride) {
+  const all = getCategoryOverrides();
+  write(KEYS.categoryOverrides, { ...all, [slug]: { ...all[slug], ...patch } });
+}
+/** A category with any admin text overrides applied (falls back to the seed). */
+export function getEffectiveCategory(slug: CategorySlug): ServiceCategory {
+  const base = CATEGORIES.find((c) => c.slug === slug) ?? CATEGORIES[0];
+  const ov = getCategoryOverrides()[slug] ?? {};
+  return {
+    ...base,
+    name: ov.name?.trim() || base.name,
+    tagline: ov.tagline?.trim() || base.tagline,
+    audience: ov.audience?.trim() || base.audience,
+    description: ov.description?.trim() || base.description,
+  };
+}
+export function getEffectiveCategories(): ServiceCategory[] {
+  return CATEGORIES.map((c) => getEffectiveCategory(c.slug));
+}
 
 export const BRAND_GROUPS = [
   "Training & Mentorship",

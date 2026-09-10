@@ -8,6 +8,7 @@ import {
   servicesByCategory,
 } from "@/lib/content";
 import { Eyebrow, Fireflies, Glow, Star } from "@/components/Motifs";
+import { CatName, CatAudience, CatDescription } from "@/components/CategoryText";
 import { ClientFit, CtaBand, WhatWeBuild } from "@/components/Sections";
 import { ClientsSupported } from "@/components/ClientsSupported";
 import { Testimonials } from "@/components/Testimonials";
@@ -82,13 +83,13 @@ export default function HomePage() {
                 >
                   <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-firefly/10 blur-2xl transition group-hover:bg-firefly/25" />
                   <span className="text-xs font-semibold uppercase tracking-eyebrow text-firefly-deep">
-                    {cat.audience}
+                    <CatAudience slug={cat.slug} />
                   </span>
                   <h3 className="mt-2 font-serif text-2xl text-forest-deep">
-                    {cat.name}
+                    <CatName slug={cat.slug} />
                     <Star className="ml-2 text-base text-firefly transition-transform duration-500 group-hover:rotate-180" />
                   </h3>
-                  <p className="mt-3 text-sm text-ink-soft">{cat.description}</p>
+                  <p className="mt-3 text-sm text-ink-soft"><CatDescription slug={cat.slug} /></p>
                   <ul className="mt-5 space-y-1.5">
                     {preview.map((s) => (
                       <li key={s.id} className="flex items-center gap-2 text-sm text-ink-soft">
@@ -98,7 +99,7 @@ export default function HomePage() {
                     ))}
                   </ul>
                   <span className="mt-auto inline-flex items-center gap-1 pt-6 text-sm font-semibold text-forest transition group-hover:gap-2">
-                    Explore {cat.name} →
+                    Explore <CatName slug={cat.slug} /> →
                   </span>
                 </Link>
               );
@@ -217,7 +218,7 @@ export default function HomePage() {
                 return (
                   <Link key={cat.slug} href="/pricing" className="card-hover">
                     <p className="text-xs font-semibold uppercase tracking-eyebrow text-firefly-deep">
-                      {cat.name}
+                      <CatName slug={cat.slug} />
                     </p>
                     <p className="mt-3 font-serif text-2xl text-forest-deep">
                       from ₱{from.toLocaleString("en-PH")}

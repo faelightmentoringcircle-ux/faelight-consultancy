@@ -6,7 +6,9 @@ import {
   getSettings, saveSettings, onStoreChange, calendarReady, activeCalendarAccount,
   CALENDAR_LABELS, Settings, CalendarProvider,
   renderTemplate, emailDeliveryReady, getUpcomingSessions, sessionDateText,
+  getEffectiveCategory, saveCategoryOverride,
 } from "@/lib/store";
+import { CATEGORIES } from "@/lib/content";
 import {
   getAllUsers, addUser, removeUser, updateUser, archiveUser, emailExists,
   getUserModules, setUserModuleLevel, ADMIN_MODULES, inviteUser, isSupabaseAuth,
@@ -169,12 +171,39 @@ export default function SettingsPage() {
       {/* Registration confirmation email */}
       <RegEmailPanel s={s} update={update} />
 
+      {/* Sub-brand pages (categories) */}
+      <SubBrandsPanel />
+
       {/* Curatable dropdown option lists */}
       <ManagedListsPanel />
 
       {/* Team accounts */}
       <TeamAccounts />
     </>
+  );
+}
+
+function SubBrandsPanel() {
+  const cls = "w-full rounded-lg border border-firefly/25 bg-white/70 px-3 py-2 text-sm outline-none focus:border-firefly";
+  return (
+    <Panel>
+      <h2 className="font-serif text-lg text-forest-deep">Sub-brand pages</h2>
+      <p className="text-xs text-ink-faint">Name, tagline, who-it&rsquo;s-for and description shown on each sub-brand page (/mentoring, /systems, /experiences) and the home cards. Leave a field blank to keep the built-in default.</p>
+      <div className="mt-4 grid gap-5 lg:grid-cols-3">
+        {CATEGORIES.map((base) => {
+          const c = getEffectiveCategory(base.slug);
+          return (
+            <div key={base.slug} className="space-y-2 rounded-xl border border-firefly/15 bg-parchment-warm/30 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-firefly-deep">/{base.slug}</p>
+              <input className={cls} defaultValue={c.name} placeholder="Name" onBlur={(e) => saveCategoryOverride(base.slug, { name: e.target.value })} />
+              <input className={cls} defaultValue={c.tagline} placeholder="Tagline" onBlur={(e) => saveCategoryOverride(base.slug, { tagline: e.target.value })} />
+              <input className={cls} defaultValue={c.audience} placeholder="Who it's for" onBlur={(e) => saveCategoryOverride(base.slug, { audience: e.target.value })} />
+              <textarea className={cls} rows={3} defaultValue={c.description} placeholder="Description" onBlur={(e) => saveCategoryOverride(base.slug, { description: e.target.value })} />
+            </div>
+          );
+        })}
+      </div>
+    </Panel>
   );
 }
 

@@ -8,6 +8,7 @@ import { StarList, CtaBand } from "./Sections";
 import { InquiryForm } from "./InquiryForm";
 import { OfferingsMenu } from "./OfferingsMenu";
 import { ContactName, ContactEmailLink, PricingDisclaimer } from "./PublicContact";
+import { CatName, CatTagline, CatAudience } from "./CategoryText";
 
 interface Extra {
   title: string;
@@ -46,12 +47,12 @@ export function SubBrandPage({
         <div className="container-fae relative z-10 py-14 sm:py-16">
           <div className="grid items-center gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:gap-12">
             <div className="max-w-2xl">
-              <Eyebrow light>Faelight · {cat.audience}</Eyebrow>
+              <Eyebrow light>Faelight · <CatAudience slug={slug} /></Eyebrow>
               <h1 className="mt-4 font-serif text-3xl leading-[1.12] sm:text-4xl">
-                {cat.name}
+                <CatName slug={slug} />
               </h1>
               <p className="mt-5 font-serif text-xl text-firefly-bright/90">
-                {cat.tagline}
+                <CatTagline slug={slug} />
               </p>
               <p className="mt-4 max-w-xl text-parchment/75">{lead}</p>
               <div className="mt-8 flex flex-wrap gap-3">

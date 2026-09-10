@@ -3,15 +3,14 @@ import Link from "next/link";
 import { DemoShowcase } from "@/components/DemoShowcase";
 import { CtaBand } from "@/components/Sections";
 import { Eyebrow, Fireflies, Glow, Star, StarDivider } from "@/components/Motifs";
-import { categoryBySlug, PROCESS } from "@/lib/content";
+import { CatAudience } from "@/components/CategoryText";
+import { PROCESS } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: "Faelight Systems — Calm operations, documented and running",
   description:
     "Operations, SOPs, Notion workspaces and dashboards for founders who need operations to stop living in their head. See a live demo of the kind of Ops OS Faelight builds.",
 };
-
-const cat = categoryBySlug("systems");
 
 const VALUE = [
   {
@@ -74,7 +73,7 @@ export default function SystemsLandingPage() {
         <div className="container-fae relative z-10 py-16 sm:py-20">
           <div className="grid items-center gap-10 lg:grid-cols-[1.15fr_0.85fr]">
             <div className="max-w-2xl">
-              <Eyebrow light>Faelight · {cat.audience}</Eyebrow>
+              <Eyebrow light>Faelight · <CatAudience slug="systems" /></Eyebrow>
               <h1 className="mt-4 font-serif text-4xl leading-[1.1] sm:text-5xl">
                 Operations that finally run without you.
               </h1>
