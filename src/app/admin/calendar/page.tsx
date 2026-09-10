@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   getSettings, saveSettings, getBookings, getEvents, addEvent, removeEvent,
   toggleBlockedDate, isDateBlocked, onStoreChange, ymd, updateBooking,
-  calendarReady, activeCalendarAccount, CALENDAR_LABELS,
+  calendarReady, CALENDAR_LABELS,
   Settings, Booking, BookingStatus, CalendarEvent, EventSource,
 } from "@/lib/store";
 import { isWorkingDay } from "@/lib/calendar";
@@ -83,8 +83,13 @@ export default function CalendarPage() {
         }
       />
 
-      {/* Sync strip */}
-      <SyncStrip settings={settings} />
+      {/* Sync strip — real Google Calendar status */}
+      <SyncStrip />
+
+      {/* Booking hours — the window the public booking page offers */}
+      <div className="mt-6">
+        <BookingHours settings={settings} />
+      </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         {/* Calendar */}
@@ -187,52 +192,145 @@ function Legend({ className, label }: { className: string; label: string }) {
   return <span className="flex items-center gap-1"><span className={`h-2 w-2 rounded-full ${className}`} />{label}</span>;
 }
 
-function SyncStrip({ settings }: { settings: Settings }) {
-  const provider = settings.calendarProvider;
-  const linked = provider !== "default";
+// Live Google Calendar status (reads /api/google/status). Also keeps the stored
+// settings honest so the header "Booking live" badge + booking engine match reality.
+function SyncStrip() {
+  const [st, setSt] = useState<{ loading: boolean; configured: boolean; connected: boolean; email: string | null }>({
+    loading: true, configured: false, connected: false, email: null,
+  });
 
-  function simulateIncoming() {
-    if (!linked) return;
-    // An event created "on Google/Microsoft" that syncs into the app.
-    const d = new Date();
-    d.setDate(d.getDate() + 1 + Math.floor(Math.random() * 5));
-    const start = (10 + Math.floor(Math.random() * 6)) * 60; // 10:00–15:00
-    addEvent({
-      date: ymd(d),
-      startMin: start,
-      endMin: start + 60,
-      title: `External event (from ${CALENDAR_LABELS[provider]})`,
-      source: provider as EventSource,
-      allDay: false,
-    });
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/google/status")
+      .then((r) => r.json())
+      .then((j) => {
+        if (!alive) return;
+        setSt({ loading: false, configured: !!j.configured, connected: !!j.connected, email: j.email ?? null });
+        if (j.configured) {
+          const cur = getSettings();
+          const wantConnected = !!j.connected;
+          const wantEmail = j.email ?? "";
+          if (cur.googleConnected !== wantConnected || cur.googleAccount !== wantEmail) {
+            saveSettings({
+              googleConnected: wantConnected,
+              googleAccount: wantEmail,
+              ...(wantConnected ? { calendarProvider: "google" as const } : {}),
+            });
+          }
+        }
+      })
+      .catch(() => { if (alive) setSt((s) => ({ ...s, loading: false })); });
+    return () => { alive = false; };
+  }, []);
+
+  const row = "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between";
+
+  if (st.loading) {
+    return <Panel><p className="text-xs text-ink-faint">Checking Google Calendar connection…</p></Panel>;
   }
 
-  return (
-    <Panel>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-twilight to-forest text-firefly-bright">⇄</span>
-          <div>
-            <p className="text-sm font-semibold text-forest-deep">
-              Two-way sync · {CALENDAR_LABELS[provider]}
-            </p>
-            <p className="text-xs text-ink-soft">
-              {linked
-                ? <>Holds &amp; blocks here <strong>push</strong> to {activeCalendarAccount(settings)}; its events <strong>pull</strong> back and block booking.</>
-                : <>Using the built-in Faelight calendar — nothing external to sync. Link Google or Microsoft in <Link href="/admin/settings" className="text-firefly-deep hover:underline">Settings</Link>.</>}
-            </p>
+  if (st.configured && st.connected) {
+    return (
+      <Panel>
+        <div className={row}>
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-twilight to-forest text-firefly-bright">⇄</span>
+            <div>
+              <p className="text-sm font-semibold text-forest-deep">Two-way sync · Google Calendar</p>
+              <p className="text-xs text-ink-soft">
+                Confirmed bookings create real Google events with a Meet link on <strong>{st.email}</strong>; blocks &amp; holds you set here keep the public slots clear.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">● Connected</span>
+            <Link href="/admin/settings" className="btn-ghost !px-3 !py-2 text-xs">Manage</Link>
           </div>
         </div>
-        {linked && (
-          <div className="flex items-center gap-2">
-            <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">● Synced</span>
-            <button onClick={simulateIncoming} className="btn-ghost !px-3 !py-2 text-xs">
-              Simulate incoming event
-            </button>
+      </Panel>
+    );
+  }
+
+  if (st.configured && !st.connected) {
+    return (
+      <Panel>
+        <div className={row}>
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-xl bg-amber-100 text-amber-700">⇄</span>
+            <div>
+              <p className="text-sm font-semibold text-forest-deep">Google Calendar not connected</p>
+              <p className="text-xs text-ink-soft">Bookings still work on the built-in calendar. Connect Google to auto-create real events + Meet links.</p>
+            </div>
           </div>
-        )}
+          <Link href="/admin/settings" className="btn-primary !px-3 !py-2 text-xs">Connect in Settings</Link>
+        </div>
+      </Panel>
+    );
+  }
+
+  // Server env not configured — built-in calendar only.
+  return (
+    <Panel>
+      <div className="flex items-center gap-3">
+        <span className="grid h-10 w-10 place-items-center rounded-xl bg-stone-100 text-stone-500">⇄</span>
+        <div>
+          <p className="text-sm font-semibold text-forest-deep">Built-in Faelight calendar</p>
+          <p className="text-xs text-ink-soft">Using the built-in calendar — nothing external to sync. Google Calendar isn’t set up on the server yet.</p>
+        </div>
       </div>
     </Panel>
+  );
+}
+
+// Booking hours + rules — surfaced here (also in Settings → Booking Rules) so
+// blocking and the daily booking window are managed on one screen. Saves live.
+function BookingHours({ settings }: { settings: Settings }) {
+  const set = (patch: Partial<Settings>) => saveSettings(patch);
+  return (
+    <Panel>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 className="font-serif text-lg text-forest-deep">Booking hours</h2>
+          <p className="text-xs text-ink-soft">The daily window &amp; rules the public booking page uses to offer slots.</p>
+        </div>
+        <Link href="/admin/settings" className="text-xs font-semibold text-firefly-deep hover:underline">More booking rules →</Link>
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <NumberField label="Start hour" value={settings.startHour} min={0} max={23} suffix=":00" onChange={(v) => set({ startHour: v })} />
+        <NumberField label="End hour" value={settings.endHour} min={1} max={24} suffix=":00" onChange={(v) => set({ endHour: v })} />
+        <NumberField label="Buffer (min)" value={settings.bufferMin} min={0} max={60} step={5} onChange={(v) => set({ bufferMin: v })} />
+        <NumberField label="Min notice (hrs)" value={settings.minNoticeHours} min={0} max={168} onChange={(v) => set({ minNoticeHours: v })} />
+        <NumberField label="Max advance (days)" value={settings.maxAdvanceDays} min={1} max={120} onChange={(v) => set({ maxAdvanceDays: v })} />
+      </div>
+      <p className="mt-3 text-[11px] text-ink-faint">
+        Slots run {settings.startHour}:00–{settings.endHour}:00 on working days, with a {settings.bufferMin}-min gap between sessions. Tip: click a weekday header above to mark it non-working.
+      </p>
+    </Panel>
+  );
+}
+
+function NumberField({
+  label, value, onChange, min, max, step = 1, suffix,
+}: {
+  label: string; value: number; onChange: (v: number) => void;
+  min?: number; max?: number; step?: number; suffix?: string;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-faint">{label}</label>
+      <div className="flex items-center gap-1">
+        <input
+          type="number"
+          value={value}
+          min={min}
+          max={max}
+          step={step}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="w-full rounded-lg border border-firefly/25 bg-white px-3 py-2 text-sm outline-none focus:border-firefly"
+        />
+        {suffix && <span className="text-xs text-ink-faint">{suffix}</span>}
+      </div>
+    </div>
   );
 }
 
