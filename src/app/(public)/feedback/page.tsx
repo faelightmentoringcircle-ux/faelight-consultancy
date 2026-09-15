@@ -64,14 +64,17 @@ function FeedbackForm({ presetClass, presetBatch }: { presetClass?: string; pres
   const [canShare, setCanShare] = useState(true);
   const [err, setErr] = useState("");
   const [done, setDone] = useState(false);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => { if (presetClass) setClassTaken(presetClass); }, [presetClass]);
   useEffect(() => { if (presetBatch) setBatch(presetBatch); }, [presetBatch]);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (sending || done) return; // guard against a double-submit creating two records
     if (!name.trim() || !email.trim()) { setErr("Please add your name and email."); return; }
     if (rating === 0) { setErr("Please pick a star rating."); return; }
+    setSending(true);
     const isClient = kind === "client";
     addFeedback({
       kind,
@@ -226,7 +229,7 @@ function FeedbackForm({ presetClass, presetBatch }: { presetClass?: string; pres
 
                 {err && <p className="text-sm text-rose-600">{err}</p>}
 
-                <button type="submit" className="btn-gold w-full !py-3.5 text-sm">✦ Send my feedback</button>
+                <button type="submit" disabled={sending} className="btn-gold w-full !py-3.5 text-sm disabled:opacity-60">{sending ? "Sending…" : "✦ Send my feedback"}</button>
               </div>
             </form>
           </div>
