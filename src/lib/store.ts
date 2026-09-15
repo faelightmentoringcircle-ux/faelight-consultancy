@@ -1042,14 +1042,25 @@ export const FEEDBACK_CLASSES = [
   "Application Classes",
   "Other",
 ];
+// Services a consultancy CLIENT (not a class student) can review.
+export const FEEDBACK_SERVICES = [
+  "Mentoring Circle",
+  "Systems",
+  "Experiences",
+  "Other",
+];
+export type FeedbackKind = "student" | "client";
 export interface Feedback {
   id: string;
+  kind: FeedbackKind; // "student" (took a class) or "client" (used a service)
   name: string;
   email: string;
-  classTaken: string; // one of FEEDBACK_CLASSES (or a session title)
-  batch: string;
+  classTaken: string; // student: one of FEEDBACK_CLASSES (or a session title)
+  batch: string; // student only
+  service?: string; // client: which service (FEEDBACK_SERVICES)
+  company?: string; // client: optional company name
   rating: number; // 1–5
-  liked: string; // what they enjoyed / learned
+  liked: string; // what they enjoyed / learned / valued
   improve: string; // suggestions
   canShare: boolean; // may we use as a testimonial
   featured: boolean; // admin flagged it
@@ -1058,14 +1069,14 @@ export interface Feedback {
 }
 
 const FEEDBACK_SEED: Feedback[] = [
-  { id: "fb-01", name: "Sheryll Navalta", email: "", classTaken: "Foundations VA", batch: "3", rating: 5, liked: "The first-week playbook made everything click. Coach Maia is so encouraging.", improve: "Maybe a longer Q&A at the end.", canShare: true, featured: true, archived: false, createdAt: daysAgo(9) },
-  { id: "fb-02", name: "Dan Vincent", email: "", classTaken: "EVA Master Class", batch: "3", rating: 5, liked: "Stakeholder communication module was gold. Very practical.", improve: "", canShare: true, featured: false, archived: false, createdAt: daysAgo(6) },
-  { id: "fb-03", name: "Risa", email: "", classTaken: "Foundations VA", batch: "3", rating: 4, liked: "Loved the warm community and the templates.", improve: "More real client examples please.", canShare: false, featured: false, archived: false, createdAt: daysAgo(4) },
+  { id: "fb-01", kind: "student", name: "Sheryll Navalta", email: "", classTaken: "Foundations VA", batch: "3", rating: 5, liked: "The first-week playbook made everything click. Coach Maia is so encouraging.", improve: "Maybe a longer Q&A at the end.", canShare: true, featured: true, archived: false, createdAt: daysAgo(9) },
+  { id: "fb-02", kind: "student", name: "Dan Vincent", email: "", classTaken: "EVA Master Class", batch: "3", rating: 5, liked: "Stakeholder communication module was gold. Very practical.", improve: "", canShare: true, featured: false, archived: false, createdAt: daysAgo(6) },
+  { id: "fb-03", kind: "student", name: "Risa", email: "", classTaken: "Foundations VA", batch: "3", rating: 4, liked: "Loved the warm community and the templates.", improve: "More real client examples please.", canShare: false, featured: false, archived: false, createdAt: daysAgo(4) },
 ];
 
 export function getFeedback(): Feedback[] {
   const existing = read<Feedback[] | null>(KEYS.feedback, null);
-  if (existing) return existing;
+  if (existing) return existing.map((f) => ({ ...f, kind: f.kind ?? "student" })); // older records = students
   write(KEYS.feedback, FEEDBACK_SEED);
   return FEEDBACK_SEED;
 }

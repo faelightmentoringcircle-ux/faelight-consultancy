@@ -9,6 +9,8 @@ import {
   addFeedback,
   logActivity,
   FEEDBACK_CLASSES,
+  FEEDBACK_SERVICES,
+  FeedbackKind,
   SessionItem,
 } from "@/lib/store";
 import { Eyebrow, Fireflies, FairySwirl, Glow, Star } from "@/components/Motifs";
@@ -48,10 +50,13 @@ function FeedbackForm({ presetClass, presetBatch }: { presetClass?: string; pres
     return base;
   }, [presetClass]);
 
+  const [kind, setKind] = useState<FeedbackKind>("student");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [classTaken, setClassTaken] = useState(presetClass ?? FEEDBACK_CLASSES[0]);
   const [batch, setBatch] = useState(presetBatch ?? "");
+  const [service, setService] = useState(FEEDBACK_SERVICES[0]);
+  const [company, setCompany] = useState("");
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [liked, setLiked] = useState("");
@@ -67,17 +72,22 @@ function FeedbackForm({ presetClass, presetBatch }: { presetClass?: string; pres
     e.preventDefault();
     if (!name.trim() || !email.trim()) { setErr("Please add your name and email."); return; }
     if (rating === 0) { setErr("Please pick a star rating."); return; }
+    const isClient = kind === "client";
     addFeedback({
+      kind,
       name: name.trim(),
       email: email.trim(),
-      classTaken,
-      batch: batch.trim(),
+      classTaken: isClient ? "" : classTaken,
+      batch: isClient ? "" : batch.trim(),
+      service: isClient ? service : undefined,
+      company: isClient ? company.trim() : undefined,
       rating,
       liked: liked.trim(),
       improve: improve.trim(),
       canShare,
     });
-    logActivity("review", `New feedback: ${name.trim()}`, `${classTaken} · ${rating}★`, "/admin/feedback");
+    const tag = isClient ? service : classTaken;
+    logActivity("review", `New ${kind} feedback: ${name.trim()}`, `${tag} · ${rating}★`, "/admin/feedback");
     setDone(true);
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -136,22 +146,54 @@ function FeedbackForm({ presetClass, presetBatch }: { presetClass?: string; pres
               </div>
 
               <div className="space-y-4">
+                <div>
+                  <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-ink-faint">I'm a…</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {([["student", "Student", "I took a class"], ["client", "Client", "I used a service"]] as const).map(([val, label, hint]) => (
+                      <button
+                        type="button"
+                        key={val}
+                        onClick={() => setKind(val)}
+                        className={`rounded-xl border px-3 py-2.5 text-left transition ${
+                          kind === val ? "border-firefly bg-firefly/10" : "border-firefly/25 hover:border-firefly/50"
+                        }`}
+                      >
+                        <span className="block text-sm font-semibold text-forest-deep">{label}</span>
+                        <span className="block text-[11px] text-ink-faint">{hint}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <Field label="Your name" required>
                   <input value={name} onChange={(e) => { setName(e.target.value); setErr(""); }} className={inputCls} placeholder="Full name" />
                 </Field>
                 <Field label="Email address" required>
                   <input type="email" value={email} onChange={(e) => { setEmail(e.target.value); setErr(""); }} className={inputCls} placeholder="you@email.com" />
                 </Field>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Class taken" required>
-                    <select value={classTaken} onChange={(e) => setClassTaken(e.target.value)} className={inputCls}>
-                      {classOptions.map((c) => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                  </Field>
-                  <Field label="Batch number">
-                    <input value={batch} onChange={(e) => setBatch(e.target.value)} className={inputCls} placeholder="e.g. 3" />
-                  </Field>
-                </div>
+                {kind === "student" ? (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Class taken" required>
+                      <select value={classTaken} onChange={(e) => setClassTaken(e.target.value)} className={inputCls}>
+                        {classOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </Field>
+                    <Field label="Batch number">
+                      <input value={batch} onChange={(e) => setBatch(e.target.value)} className={inputCls} placeholder="e.g. 3" />
+                    </Field>
+                  </div>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Which service?" required>
+                      <select value={service} onChange={(e) => setService(e.target.value)} className={inputCls}>
+                        {FEEDBACK_SERVICES.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </Field>
+                    <Field label="Company / business">
+                      <input value={company} onChange={(e) => setCompany(e.target.value)} className={inputCls} placeholder="Optional" />
+                    </Field>
+                  </div>
+                )}
 
                 <Field label="Overall rating" required>
                   <div className="flex gap-1" onMouseLeave={() => setHover(0)}>
@@ -170,7 +212,7 @@ function FeedbackForm({ presetClass, presetBatch }: { presetClass?: string; pres
                   </div>
                 </Field>
 
-                <Field label="What did you enjoy or learn?">
+                <Field label={kind === "client" ? "What did you value most?" : "What did you enjoy or learn?"}>
                   <textarea rows={3} value={liked} onChange={(e) => setLiked(e.target.value)} className={inputCls} placeholder="The parts that stood out for you…" />
                 </Field>
                 <Field label="Anything we could improve?">

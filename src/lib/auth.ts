@@ -151,7 +151,7 @@ export const ADMIN_MODULES: { key: string; label: string }[] = [
   { key: "marketing", label: "Marketing" },
   { key: "blog", label: "Blog & Insights" },
   { key: "reviews", label: "Reviews" },
-  { key: "feedback", label: "Session Feedback" },
+  { key: "feedback", label: "Feedback" },
   { key: "services", label: "Services" },
   { key: "sessions", label: "Classes & Sessions" },
   { key: "registrations", label: "Registrations & Enrollees" },

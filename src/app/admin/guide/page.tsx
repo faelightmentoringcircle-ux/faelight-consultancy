@@ -17,7 +17,7 @@ const OVERVIEW: { icon: string; title: string; href: string; desc: string }[] = 
   { icon: "✉", title: "Marketing", href: "/admin/marketing", desc: "Email campaigns, content calendar, social, promos and automations." },
   { icon: "✍", title: "Blog & Insights", href: "/admin/blog", desc: "Write and publish blog posts shown on the public /blog page." },
   { icon: "★", title: "Reviews", href: "/admin/reviews", desc: "Approve testimonials and manage video testimonials." },
-  { icon: "❤", title: "Session Feedback", href: "/admin/feedback", desc: "Student feedback collected on the site — feature the best as testimonials." },
+  { icon: "❤", title: "Feedback", href: "/admin/feedback", desc: "Reviews from class students and consultancy clients — feature the best as testimonials." },
   { icon: "▤", title: "Templates & Docs", href: "/admin/templates", desc: "Branded invoices & documents, print/PDF, and a ready-made template library." },
   { icon: "❖", title: "Services", href: "/admin/services", desc: "Edit service pricing, descriptions and availability." },
   { icon: "⚑", title: "Faelight Pool", href: "/admin/pool", desc: "Manage the VA talent pool — edit, archive or remove VAs." },
@@ -97,14 +97,14 @@ const GUIDES: Guide[] = [
   },
   {
     title: "Collect & use student feedback",
-    badge: "Session Feedback",
+    badge: "Feedback",
     href: "/admin/feedback",
-    hrefLabel: "Open Session Feedback",
+    hrefLabel: "Open Feedback",
     steps: [
-      "Students open Share Feedback (site menu) or the \"Give feedback\" button on a past class.",
-      "They rate 1–5 stars, say what they enjoyed, suggest improvements, and can opt in to be shared as a testimonial.",
-      "Responses land in Session Feedback with your average rating and counts.",
-      "Click ★ Feature on the best ones, filter by class, or archive/delete. Featured, shareable ones are ready to reuse as testimonials.",
+      "On Share Feedback (site menu) the person first picks I'm a Student or I'm a Client.",
+      "Students give class + batch; clients give the service + optional company. Both rate 1–5 stars, say what they valued, suggest improvements, and can opt in as a testimonial.",
+      "All responses land in Feedback, tagged Student or Client, with your average rating and counts. Filter by Type or Class.",
+      "Click ★ Feature on the best ones, then publish them under Reviews & Video Testimonials. Archive/delete the rest.",
     ],
   },
   {
@@ -138,7 +138,7 @@ const GUIDES: Guide[] = [
     hrefLabel: "Open Settings",
     steps: [
       "Open Settings → Team Accounts and add the person (or edit an existing team member).",
-      "For team members, toggle exactly which sections they can open (e.g. Registrations, Session Feedback).",
+      "For team members, toggle exactly which sections they can open (e.g. Registrations, Feedback).",
       "They'll only see the sections you enable when they sign in.",
     ],
   },

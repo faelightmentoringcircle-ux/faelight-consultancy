@@ -75,7 +75,7 @@ const NAV_GROUPS: { title?: string; items: NavEntry[] }[] = [
       { href: "/admin/marketing", label: "Marketing", icon: "✉", module: "marketing" },
       { href: "/admin/blog", label: "Blog & Insights", icon: "✍", module: "blog" },
       { href: "/admin/reviews", label: "Reviews", icon: "★", module: "reviews" },
-      { href: "/admin/feedback", label: "Session Feedback", icon: "❤", module: "feedback" },
+      { href: "/admin/feedback", label: "Feedback", icon: "❤", module: "feedback" },
     ],
   },
   {
