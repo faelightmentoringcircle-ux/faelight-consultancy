@@ -79,9 +79,9 @@ export default function CalendarPage() {
         subtitle="Block days, add personal holds, and manage what the public booking page offers."
         action={
           <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-            calendarReady(settings) ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
+            calendarReady(settings) ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
           }`}>
-            {calendarReady(settings) ? "Booking live" : "Booking paused"}
+            {calendarReady(settings) ? "Calendar synced" : "Calendar offline · booking still open"}
           </span>
         }
       />

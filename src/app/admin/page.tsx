@@ -124,11 +124,11 @@ export default function DashboardPage() {
       />
 
       {reconnect && (
-        <Link href="/admin/settings" className="mb-6 flex items-center gap-3 rounded-xl border border-rose-300 bg-rose-50 p-4 text-sm text-rose-800 hover:bg-rose-100">
+        <Link href="/admin/settings" className="mb-6 flex items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 hover:bg-amber-100">
           <span className="text-lg">⚠</span>
           <span>
-            <strong>{providerLabel} disconnected.</strong> Public booking has degraded to the
-            inquiry form. Click to reconnect (or switch calendar) in Settings.
+            <strong>{providerLabel} disconnected.</strong> Clients can still book normally, but new
+            bookings won&apos;t auto-add a Google event or Meet link until you reconnect in Settings.
           </span>
         </Link>
       )}

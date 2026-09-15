@@ -335,8 +335,8 @@ function CalendarPanel({
         <>Choose which calendar drives public booking. Active: <strong className="text-forest">{CALENDAR_LABELS[s.calendarProvider]}</strong>{" · "}{activeCalendarAccount(s)}</>
       }
       action={
-        <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${calendarReady(s) ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
-          {calendarReady(s) ? "Booking live" : "Booking paused"}
+        <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${calendarReady(s) ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+          {calendarReady(s) ? "Calendar synced" : "Calendar offline · booking still open"}
         </span>
       }
     >

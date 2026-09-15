@@ -11,7 +11,6 @@ import {
   addBooking,
   addLead,
   updateBooking,
-  calendarReady,
   onStoreChange,
   ymd,
   Settings,
@@ -82,10 +81,10 @@ export default function BookPage() {
     return <div className="container-fae section"><div className="h-96 animate-pulse rounded-3xl bg-parchment-warm/50" /></div>;
   }
 
-  // Active calendar not ready → degrade to inquiry (spec §5.7)
-  if (!calendarReady(settings)) {
-    return <DegradedBooking />;
-  }
+  // NOTE: booking availability comes from the built-in per-day hours and never
+  // depends on Google being connected. Google is only used to auto-create the
+  // event on confirm (a no-op if disconnected), so a lapsed/expired Google
+  // token must never hide the slots or drop clients into an inquiry form.
 
   function confirm() {
     if (!bookingType || !slot || !settings) return;
@@ -655,20 +654,3 @@ function SumRow({ label, value, link }: { label: string; value: string; link?: b
   );
 }
 
-function DegradedBooking() {
-  return (
-    <section className="section">
-      <div className="container-fae max-w-xl">
-        <div className="card text-center">
-          <Star className="text-2xl text-firefly" />
-          <h1 className="mt-3 font-serif text-2xl text-forest-deep">Online booking is briefly unavailable</h1>
-          <p className="mt-2 text-ink-soft">
-            Maia's calendar connection is being refreshed, so live slots aren't showing right now.
-            Send us an inquiry instead and we'll book you in personally.
-          </p>
-          <Link href="/contact" className="btn-primary mt-6">Send an inquiry</Link>
-        </div>
-      </div>
-    </section>
-  );
-}

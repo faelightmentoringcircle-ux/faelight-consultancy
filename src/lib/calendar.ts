@@ -26,9 +26,16 @@ function sameLocalDay(iso: string, date: Date): boolean {
   );
 }
 
+// Only well-formed ranges (start < end, inside the day) can offer slots — a
+// half-typed or reversed range in the editor must never make a day look
+// "available" yet empty.
+function validIntervals(dh: { intervals: { start: number; end: number }[] }): { start: number; end: number }[] {
+  return dh.intervals.filter((iv) => Number.isFinite(iv.start) && Number.isFinite(iv.end) && iv.start < iv.end);
+}
+
 export function isWorkingDay(date: Date, settings: Settings): boolean {
   const dh = settings.availability?.[date.getDay()];
-  if (dh) return dh.enabled && dh.intervals.length > 0;
+  if (dh) return dh.enabled && validIntervals(dh).length > 0;
   return settings.workingDays.includes(date.getDay());
 }
 
@@ -71,7 +78,7 @@ export function getAvailableSlots(
     .filter((ev) => ev.date === key)
     .forEach((ev) => busy.push({ start: ev.startMin, end: ev.endMin }));
 
-  const intervals = dayHoursFor(settings, date.getDay()).intervals;
+  const intervals = validIntervals(dayHoursFor(settings, date.getDay()));
   const step = 30; // offer slots on the half hour
   const buffer = settings.bufferMin;
 
