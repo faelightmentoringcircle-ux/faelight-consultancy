@@ -231,12 +231,12 @@ function FeedbackForm({ presetClass, presetBatch }: { presetClass?: string; pres
                   <textarea rows={2} value={improve} onChange={(e) => setImprove(e.target.value)} className={inputCls} placeholder="Optional — we truly want to know." />
                 </Field>
 
-                <div className="rounded-xl border border-firefly/20 bg-parchment-warm/40 p-3">
+                <div className="rounded-xl border border-firefly/20 bg-parchment-warm/40 p-3 text-center">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">Add a photo &amp; video (optional)</p>
                   <p className="mt-0.5 text-[11px] text-ink-faint">
                     A photo{kind === "client" ? " and company logo" : ""} makes your testimonial shine — you can also share a short video.
                   </p>
-                  <div className="mt-3 flex flex-wrap gap-5">
+                  <div className="mt-3 flex flex-wrap justify-center gap-5">
                     <ImagePick label="Profile photo" shape="circle" value={photo} onPick={setPhoto} max={320} />
                     {kind === "client" && <ImagePick label="Company logo" shape="square" value={logo} onPick={setLogo} max={400} format="png" />}
                   </div>
@@ -244,7 +244,7 @@ function FeedbackForm({ presetClass, presetBatch }: { presetClass?: string; pres
                   {kind === "client" && (
                     <>
                       <p className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">More photos (up to 3)</p>
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
                         {images.map((src, i) => (
                           <div key={i} className="relative">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
