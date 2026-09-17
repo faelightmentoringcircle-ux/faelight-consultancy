@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getApprovedReviews, onStoreChange, Review } from "@/lib/store";
 import { videoEmbed } from "@/lib/format";
-import { TestimonialCard, VideoCard } from "@/components/Testimonials";
+import { TestimonialsGrid } from "@/components/Testimonials";
 import { Eyebrow, Fireflies, FairySwirl, Glow } from "@/components/Motifs";
 
 export default function TestimonialsPage() {
@@ -45,18 +45,7 @@ export default function TestimonialsPage() {
               <Link href="/feedback" className="font-semibold text-firefly-deep hover:underline">share your experience ✦</Link>.
             </p>
           ) : (
-            <>
-              {videoReviews.length > 0 && (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {videoReviews.map((t) => <VideoCard key={t.id} t={t} />)}
-                </div>
-              )}
-              {textReviews.length > 0 && (
-                <div className={`grid gap-6 lg:grid-cols-3 ${videoReviews.length > 0 ? "mt-6" : ""}`}>
-                  {textReviews.map((t) => <TestimonialCard key={t.id} t={t} />)}
-                </div>
-              )}
-            </>
+            <TestimonialsGrid reviews={[...videoReviews, ...textReviews]} />
           )}
         </div>
       </section>

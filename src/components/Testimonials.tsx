@@ -40,24 +40,12 @@ export function Testimonials() {
           </p>
         </div>
 
-        {videoReviews.length > 0 && (
-          <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {videoReviews.slice(0, 6).map((t) => (
-              <VideoCard key={t.id} t={t} />
-            ))}
-          </div>
-        )}
-
-        {textReviews.length > 0 ? (
-          <div className={`grid gap-6 lg:grid-cols-3 ${videoReviews.length > 0 ? "mt-6" : "mt-12"}`}>
-            {textReviews.slice(0, 6).map((t) => (
-              <TestimonialCard key={t.id} t={t} />
-            ))}
+        {reviews.length > 0 ? (
+          <div className="mt-12">
+            <TestimonialsGrid reviews={[...videoReviews, ...textReviews].slice(0, 6)} />
           </div>
         ) : (
-          videoReviews.length === 0 && (
-            <p className="mt-10 text-center text-sm text-ink-faint">Be the first to share your experience ✦</p>
-          )
+          <p className="mt-10 text-center text-sm text-ink-faint">Be the first to share your experience ✦</p>
         )}
 
         <div className="mt-10 text-center">
@@ -76,6 +64,28 @@ export function Testimonials() {
 
 function initials(name: string): string {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("") || "★";
+}
+
+// Lays reviews out by count: one is centered and prominent, two sit as a
+// centered pair, three or more fill a professional 3-up grid. Videos first.
+export function TestimonialsGrid({ reviews }: { reviews: Review[] }) {
+  const ordered = [...reviews].sort(
+    (a, b) => (videoEmbed(b.videoUrl) ? 1 : 0) - (videoEmbed(a.videoUrl) ? 1 : 0)
+  );
+  const n = ordered.length;
+  const cls =
+    n <= 1
+      ? "mx-auto grid max-w-xl gap-6"
+      : n === 2
+      ? "mx-auto grid max-w-3xl gap-6 sm:grid-cols-2"
+      : "grid items-start gap-6 sm:grid-cols-2 lg:grid-cols-3";
+  return (
+    <div className={cls}>
+      {ordered.map((t) =>
+        videoEmbed(t.videoUrl) ? <VideoCard key={t.id} t={t} /> : <TestimonialCard key={t.id} t={t} />
+      )}
+    </div>
+  );
 }
 
 // Branded "Client Testimonial" card — dark forest panel, firefly-ringed avatar,
