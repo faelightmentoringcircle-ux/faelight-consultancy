@@ -68,12 +68,18 @@ export function videoEmbed(url?: string): { kind: "iframe" | "file"; src: string
   const vimeo = u.match(/vimeo\.com\/(?:video\/)?(\d+)/);
   if (vimeo) return { kind: "iframe", src: `https://player.vimeo.com/video/${vimeo[1]}` };
 
+  // Google Drive — a /view or ?id= share link only embeds as /preview.
+  const drive =
+    u.match(/drive\.google\.com\/file\/d\/([\w-]+)/) ||
+    u.match(/drive\.google\.com\/(?:open|uc)\?(?:export=\w+&)?id=([\w-]+)/);
+  if (drive) return { kind: "iframe", src: `https://drive.google.com/file/d/${drive[1]}/preview` };
+
   // Uploaded data URL or direct video file
   if (u.startsWith("data:video") || /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(u)) {
     return { kind: "file", src: u };
   }
 
-  // Fallback: assume it can be embedded in an iframe (e.g. Loom, Drive preview)
+  // Fallback: assume it can be embedded in an iframe (e.g. Loom).
   return { kind: "iframe", src: u };
 }
 

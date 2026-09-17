@@ -2661,9 +2661,10 @@ export interface Review {
 export function getReviews(): Review[] {
   ensureSeed();
   seedIfMissing(KEYS.reviews, seedReviews);
-  return read<Review[]>(KEYS.reviews, []).sort(
-    (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)
-  );
+  // Hide the old demo/sample testimonials everywhere — only real submissions show.
+  return read<Review[]>(KEYS.reviews, [])
+    .filter((r) => !r.id.startsWith("rev-seed-"))
+    .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
 }
 export function getApprovedReviews(): Review[] {
   return getReviews().filter((r) => r.status === "approved");
@@ -3093,13 +3094,8 @@ function seedIntros(): IntroItem[] {
   ];
 }
 function seedReviews(): Review[] {
-  return [
-    { id: "rev-seed-1", author: "Andrea V.", roleCompany: "Operations Lead, remote team", quote: "Faelight untangled a year of scattered tools into one calm system my team can actually run without me.", categorySlug: "systems", rating: 5, status: "approved", createdAt: daysAgo(14) },
-    { id: "rev-seed-2", author: "Mark D.", roleCompany: "Foundations Class graduate", quote: "I came in unsure I could be a VA and left with a portfolio, real tools and the confidence to land my first client.", categorySlug: "mentoring", rating: 5, status: "approved", createdAt: daysAgo(20) },
-    { id: "rev-seed-3", author: "Grace T.", roleCompany: "Women's community organiser", quote: "Our virtual experience felt warm, story-led and genuinely fun — people are still talking about it.", categorySlug: "experiences", rating: 5, status: "approved", createdAt: daysAgo(9) },
-    { id: "rev-seed-4", author: "Bianca O.", roleCompany: "Ocampo Dental", quote: "The SOPs Faelight built made onboarding new staff painless. Wish we'd done it a year ago!", categorySlug: "systems", rating: 5, status: "pending", createdAt: daysAgo(2) },
-    { id: "rev-seed-5", author: "Paolo M.", roleCompany: "Senior VA", quote: "The leadership class pushed me to own my work. Landed an EVA role two months later.", categorySlug: "mentoring", rating: 4, status: "pending", createdAt: daysAgo(1) },
-  ];
+  // No demo testimonials — the site shows only real submitted/published reviews.
+  return [];
 }
 
 function seedBrands(): Brand[] {

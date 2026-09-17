@@ -117,8 +117,8 @@ export function VideoCard({ t }: { t: Review }) {
   const v = videoEmbed(t.videoUrl);
   if (!v) return null;
   return (
-    <figure className="card flex flex-col overflow-hidden p-0">
-      <div className="relative aspect-video w-full bg-forest-deep">
+    <figure className="flex flex-col overflow-hidden rounded-3xl border border-firefly/20 bg-forest-deep text-parchment shadow-card">
+      <div className="relative aspect-video w-full bg-twilight-deep">
         {v.kind === "iframe" ? (
           <iframe
             src={v.src}
@@ -134,9 +134,9 @@ export function VideoCard({ t }: { t: Review }) {
       </div>
       <figcaption className="flex items-center justify-between gap-3 p-5">
         <div className="min-w-0">
-          <p className="truncate font-semibold text-forest">{t.author}</p>
-          <p className="truncate text-xs text-ink-faint">{t.roleCompany}</p>
-          {t.quote && <p className="mt-1 line-clamp-2 text-sm text-ink-soft">“{t.quote}”</p>}
+          <p className="truncate font-serif text-base font-bold uppercase tracking-wide text-parchment">{t.author}</p>
+          <p className="truncate text-[11px] font-semibold uppercase tracking-eyebrow text-firefly">{t.roleCompany}</p>
+          {t.quote && <p className="mt-1 line-clamp-2 text-sm text-parchment/80">“{t.quote}”</p>}
         </div>
         <Stars n={t.rating} />
       </figcaption>
