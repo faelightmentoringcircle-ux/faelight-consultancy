@@ -10,7 +10,11 @@ import {
   unpublishFeedbackReview,
   onStoreChange,
   Feedback,
+  FeedbackKind,
+  FEEDBACK_CLASSES,
+  FEEDBACK_SERVICES,
 } from "@/lib/store";
+import { compressImage } from "@/lib/image";
 import { formatDateShort } from "@/lib/format";
 import { AdminHeader, Panel, StatTile } from "@/components/admin/ui";
 
@@ -29,6 +33,7 @@ export default function AdminFeedbackPage() {
   const [fClass, setFClass] = useState("All");
   const [fKind, setFKind] = useState<"All" | "student" | "client">("All");
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Feedback | null>(null);
 
   useEffect(() => {
     const sync = () => setItems(getFeedback());
@@ -127,6 +132,9 @@ export default function AdminFeedbackPage() {
                 </div>
               </div>
               <div className="flex shrink-0 flex-wrap gap-1.5">
+                <button onClick={() => setEditing(f)} className="rounded-lg border border-firefly/25 px-2.5 py-1 text-xs font-semibold text-forest hover:bg-firefly/10">
+                  ✎ Edit
+                </button>
                 <button onClick={() => updateFeedback(f.id, { featured: !f.featured })} className="rounded-lg border border-firefly/25 px-2.5 py-1 text-xs font-semibold text-forest hover:bg-firefly/10">
                   {f.featured ? "★ Unfeature" : "☆ Feature"}
                 </button>
@@ -152,6 +160,141 @@ export default function AdminFeedbackPage() {
           </Panel>
         ))}
       </div>
+
+      {editing && <EditFeedbackModal f={editing} onClose={() => setEditing(null)} />}
     </>
+  );
+}
+
+function EditFeedbackModal({ f, onClose }: { f: Feedback; onClose: () => void }) {
+  const [kind, setKind] = useState<FeedbackKind>(f.kind ?? "student");
+  const [name, setName] = useState(f.name);
+  const [email, setEmail] = useState(f.email);
+  const [classTaken, setClassTaken] = useState(f.classTaken || FEEDBACK_CLASSES[0]);
+  const [batch, setBatch] = useState(f.batch || "");
+  const [service, setService] = useState(f.service || FEEDBACK_SERVICES[0]);
+  const [company, setCompany] = useState(f.company || "");
+  const [rating, setRating] = useState(f.rating);
+  const [liked, setLiked] = useState(f.liked || "");
+  const [improve, setImprove] = useState(f.improve || "");
+  const [videoUrl, setVideoUrl] = useState(f.videoUrl || "");
+  const [photo, setPhoto] = useState(f.photo || "");
+  const [logo, setLogo] = useState(f.logo || "");
+
+  const inp = "w-full rounded-lg border border-firefly/25 bg-white px-3 py-2 text-sm outline-none focus:border-firefly";
+  const lbl = "block text-[11px] font-semibold uppercase tracking-wide text-ink-faint";
+
+  function save() {
+    const isClient = kind === "client";
+    updateFeedback(f.id, {
+      kind,
+      name: name.trim(),
+      email: email.trim(),
+      classTaken: isClient ? "" : classTaken,
+      batch: isClient ? "" : batch.trim(),
+      service: isClient ? service : undefined,
+      company: isClient ? company.trim() : undefined,
+      rating,
+      liked: liked.trim(),
+      improve: improve.trim(),
+      videoUrl: videoUrl.trim() || undefined,
+      photo: photo || undefined,
+      logo: isClient && logo ? logo : undefined,
+    });
+    // Keep the live testimonial in sync if this review is already published.
+    if (f.publishedReviewId) publishFeedbackAsReview(f.id);
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto bg-forest-deep/50 p-4 backdrop-blur-sm">
+      <div className="my-8 w-full max-w-lg rounded-2xl border border-firefly/25 bg-parchment-card p-6 shadow-card">
+        <div className="flex items-center justify-between">
+          <h2 className="font-serif text-xl text-forest-deep">Edit review</h2>
+          <button onClick={onClose} className="text-xl text-ink-faint hover:text-forest">✕</button>
+        </div>
+        {f.publishedReviewId && (
+          <p className="mt-2 rounded-lg bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold text-emerald-700">Published — saving updates the public testimonial too.</p>
+        )}
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <label className="space-y-1"><span className={lbl}>Type</span>
+            <select className={inp} value={kind} onChange={(e) => setKind(e.target.value as FeedbackKind)}>
+              <option value="student">Student</option>
+              <option value="client">Client</option>
+            </select>
+          </label>
+          <label className="space-y-1"><span className={lbl}>Rating</span>
+            <div className="flex gap-1 pt-1">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button type="button" key={n} onClick={() => setRating(n)} className={`text-2xl ${n <= rating ? "text-firefly" : "text-firefly/25"}`} aria-label={`${n} stars`}>★</button>
+              ))}
+            </div>
+          </label>
+          <label className="space-y-1 sm:col-span-2"><span className={lbl}>Name</span><input className={inp} value={name} onChange={(e) => setName(e.target.value)} /></label>
+          <label className="space-y-1 sm:col-span-2"><span className={lbl}>Email</span><input className={inp} value={email} onChange={(e) => setEmail(e.target.value)} /></label>
+
+          {kind === "student" ? (
+            <>
+              <label className="space-y-1"><span className={lbl}>Class taken</span>
+                <select className={inp} value={classTaken} onChange={(e) => setClassTaken(e.target.value)}>
+                  {FEEDBACK_CLASSES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </label>
+              <label className="space-y-1"><span className={lbl}>Batch</span><input className={inp} value={batch} onChange={(e) => setBatch(e.target.value)} placeholder="e.g. 3" /></label>
+            </>
+          ) : (
+            <>
+              <label className="space-y-1"><span className={lbl}>Service</span>
+                <select className={inp} value={service} onChange={(e) => setService(e.target.value)}>
+                  {FEEDBACK_SERVICES.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </label>
+              <label className="space-y-1"><span className={lbl}>Company</span><input className={inp} value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Optional" /></label>
+            </>
+          )}
+
+          <label className="space-y-1 sm:col-span-2"><span className={lbl}>{kind === "client" ? "What they valued (quote)" : "What they enjoyed (quote)"}</span><textarea rows={3} className={inp} value={liked} onChange={(e) => setLiked(e.target.value)} /></label>
+          <label className="space-y-1 sm:col-span-2"><span className={lbl}>Suggestions</span><textarea rows={2} className={inp} value={improve} onChange={(e) => setImprove(e.target.value)} /></label>
+          <label className="space-y-1 sm:col-span-2"><span className={lbl}>Video link</span><input className={inp} value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="YouTube / Vimeo / Loom / Drive" /></label>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-start gap-5">
+          <EditImage label="Profile photo" shape="circle" value={photo} onPick={setPhoto} max={320} />
+          {kind === "client" && <EditImage label="Company logo" shape="square" value={logo} onPick={setLogo} max={400} format="png" />}
+        </div>
+
+        <div className="mt-6 flex justify-end gap-2">
+          <button onClick={onClose} className="btn-ghost !py-2 text-xs">Cancel</button>
+          <button onClick={save} disabled={!name.trim()} className="btn-primary !py-2 text-xs disabled:opacity-50">Save changes</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EditImage({
+  label, shape, value, onPick, max, format = "jpeg",
+}: {
+  label: string; shape: "circle" | "square"; value: string;
+  onPick: (v: string) => void; max: number; format?: "jpeg" | "png";
+}) {
+  const round = shape === "circle" ? "rounded-full" : "rounded-xl";
+  return (
+    <div className="text-center">
+      <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-ink-faint">{label}</span>
+      <label className={`relative grid h-16 w-16 cursor-pointer place-items-center overflow-hidden border-2 border-firefly/40 bg-white ${round} hover:border-firefly`}>
+        {value
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img src={value} alt="" className="h-full w-full object-cover" />
+          : <span className="text-xl text-firefly-deep">＋</span>}
+        <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+          const file = e.target.files?.[0]; if (!file) return;
+          onPick(await compressImage(file, max, format));
+          e.target.value = "";
+        }} />
+      </label>
+      {value && <button type="button" onClick={() => onPick("")} className="mt-1 block w-full text-[10px] font-semibold text-rose-600 hover:underline">Remove</button>}
+    </div>
   );
 }
