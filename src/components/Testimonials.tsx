@@ -80,7 +80,7 @@ function initials(name: string): string {
 
 // Branded "Client Testimonial" card — dark forest panel, firefly-ringed avatar,
 // gold stars and quote marks. Photo/logo are optional (from a published review).
-function TestimonialCard({ t }: { t: Review }) {
+export function TestimonialCard({ t }: { t: Review }) {
   return (
     <figure className="relative flex flex-col overflow-hidden rounded-3xl border border-firefly/20 bg-forest-deep p-7 text-parchment shadow-card">
       <span aria-hidden className="pointer-events-none absolute -right-1 top-1 select-none font-serif text-7xl leading-none text-firefly/20">”</span>
@@ -113,7 +113,7 @@ function TestimonialCard({ t }: { t: Review }) {
   );
 }
 
-function VideoCard({ t }: { t: Review }) {
+export function VideoCard({ t }: { t: Review }) {
   const v = videoEmbed(t.videoUrl);
   if (!v) return null;
   return (

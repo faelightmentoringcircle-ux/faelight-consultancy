@@ -29,6 +29,7 @@ const NAV: NavItem[] = [
       { href: "/blog", label: "Blog & Insights" },
       { href: "/community", label: "News & Polls" },
       { href: "/opportunities", label: "Opportunities" },
+      { href: "/testimonials", label: "Testimonials" },
       { href: "/feedback", label: "Share Feedback" },
     ],
   },
