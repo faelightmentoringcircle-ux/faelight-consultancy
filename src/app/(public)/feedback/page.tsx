@@ -14,6 +14,7 @@ import {
   SessionItem,
 } from "@/lib/store";
 import { Eyebrow, Fireflies, FairySwirl, Glow, Star } from "@/components/Motifs";
+import { compressImage } from "@/lib/image";
 
 export default function FeedbackPage() {
   return (
@@ -57,6 +58,10 @@ function FeedbackForm({ presetClass, presetBatch }: { presetClass?: string; pres
   const [batch, setBatch] = useState(presetBatch ?? "");
   const [service, setService] = useState(FEEDBACK_SERVICES[0]);
   const [company, setCompany] = useState("");
+  const [photo, setPhoto] = useState("");
+  const [logo, setLogo] = useState("");
+  const [images, setImages] = useState<string[]>([]);
+  const [videoUrl, setVideoUrl] = useState("");
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [liked, setLiked] = useState("");
@@ -84,6 +89,10 @@ function FeedbackForm({ presetClass, presetBatch }: { presetClass?: string; pres
       batch: isClient ? "" : batch.trim(),
       service: isClient ? service : undefined,
       company: isClient ? company.trim() : undefined,
+      photo: photo || undefined,
+      logo: isClient && logo ? logo : undefined,
+      images: isClient && images.length ? images : undefined,
+      videoUrl: videoUrl.trim() || undefined,
       rating,
       liked: liked.trim(),
       improve: improve.trim(),
@@ -222,6 +231,48 @@ function FeedbackForm({ presetClass, presetBatch }: { presetClass?: string; pres
                   <textarea rows={2} value={improve} onChange={(e) => setImprove(e.target.value)} className={inputCls} placeholder="Optional — we truly want to know." />
                 </Field>
 
+                <div className="rounded-xl border border-firefly/20 bg-parchment-warm/40 p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">Add a photo &amp; video (optional)</p>
+                  <p className="mt-0.5 text-[11px] text-ink-faint">
+                    A photo{kind === "client" ? " and company logo" : ""} makes your testimonial shine — you can also share a short video.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-5">
+                    <ImagePick label="Profile photo" shape="circle" value={photo} onPick={setPhoto} max={320} />
+                    {kind === "client" && <ImagePick label="Company logo" shape="square" value={logo} onPick={setLogo} max={400} format="png" />}
+                  </div>
+
+                  {kind === "client" && (
+                    <>
+                      <p className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">More photos (up to 3)</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        {images.map((src, i) => (
+                          <div key={i} className="relative">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={src} alt="" className="h-16 w-16 rounded-lg object-cover" />
+                            <button type="button" onClick={() => setImages(images.filter((_, j) => j !== i))} className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-rose-500 text-[10px] text-white">✕</button>
+                          </div>
+                        ))}
+                        {images.length < 3 && (
+                          <label className="grid h-16 w-16 cursor-pointer place-items-center rounded-lg border border-dashed border-firefly/40 text-xl text-firefly-deep hover:bg-firefly/10">
+                            +
+                            <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                              const file = e.target.files?.[0]; if (!file) return;
+                              const url = await compressImage(file, 800, "jpeg");
+                              setImages((arr) => [...arr, url].slice(0, 3));
+                              e.target.value = "";
+                            }} />
+                          </label>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  <label className="mt-3 block space-y-1.5">
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">Video testimonial link</span>
+                    <input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} className={inputCls} placeholder="Paste a YouTube, Vimeo or Loom link (optional)" />
+                  </label>
+                </div>
+
                 <label className="flex items-start gap-2.5 rounded-xl border border-firefly/20 bg-white/50 p-3 text-sm text-ink-soft">
                   <input type="checkbox" checked={canShare} onChange={(e) => setCanShare(e.target.checked)} className="mt-0.5" />
                   <span>You may share my feedback as a testimonial on the Faelight site. <Star className="text-firefly" /></span>
@@ -241,6 +292,32 @@ function FeedbackForm({ presetClass, presetBatch }: { presetClass?: string; pres
 
 const inputCls =
   "w-full rounded-xl border border-firefly/25 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-firefly focus:ring-2 focus:ring-firefly/20";
+
+function ImagePick({
+  label, shape, value, onPick, max, format = "jpeg",
+}: {
+  label: string; shape: "circle" | "square"; value: string;
+  onPick: (v: string) => void; max: number; format?: "jpeg" | "png";
+}) {
+  const round = shape === "circle" ? "rounded-full" : "rounded-xl";
+  return (
+    <div className="text-center">
+      <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-ink-faint">{label}</span>
+      <label className={`relative mx-auto grid h-20 w-20 cursor-pointer place-items-center overflow-hidden border-2 border-firefly/40 bg-white/60 ${round} hover:border-firefly`}>
+        {value
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img src={value} alt="" className="h-full w-full object-cover" />
+          : <span className="text-2xl text-firefly-deep">＋</span>}
+        <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+          const file = e.target.files?.[0]; if (!file) return;
+          onPick(await compressImage(file, max, format));
+          e.target.value = "";
+        }} />
+      </label>
+      {value && <button type="button" onClick={() => onPick("")} className="mt-1 block w-full text-[10px] font-semibold text-rose-600 hover:underline">Remove</button>}
+    </div>
+  );
+}
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (

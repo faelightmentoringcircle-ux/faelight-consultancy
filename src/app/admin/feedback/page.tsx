@@ -6,6 +6,8 @@ import {
   updateFeedback,
   removeFeedback,
   feedbackAverage,
+  publishFeedbackAsReview,
+  unpublishFeedbackReview,
   onStoreChange,
   Feedback,
 } from "@/lib/store";
@@ -84,7 +86,12 @@ export default function AdminFeedbackPage() {
         {visible.map((f) => (
           <Panel key={f.id} className={f.featured ? "border-firefly/50 bg-firefly/[0.04]" : ""}>
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
+              <div className="flex min-w-0 gap-3">
+                {f.photo && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={f.photo} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-firefly/40" />
+                )}
+                <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-medium text-forest-deep">{f.name || "Anonymous"}</p>
                   <Stars n={f.rating} />
@@ -102,11 +109,36 @@ export default function AdminFeedbackPage() {
                 </p>
                 {f.liked && <p className="mt-2 text-sm text-ink-soft">“{f.liked}”</p>}
                 {f.improve && <p className="mt-1.5 text-sm text-ink-faint"><span className="font-semibold uppercase tracking-wide text-[10px]">Suggests:</span> {f.improve}</p>}
+                {(f.logo || (f.images && f.images.length > 0) || f.videoUrl) && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {f.logo && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={f.logo} alt="logo" title="Company logo" className="h-9 max-w-[80px] rounded border border-firefly/20 bg-white object-contain p-0.5" />
+                    )}
+                    {f.images?.map((src, i) => (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img key={i} src={src} alt="" className="h-12 w-12 rounded-lg object-cover" />
+                    ))}
+                    {f.videoUrl && (
+                      <a href={f.videoUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-full bg-twilight/10 px-2.5 py-1 text-[11px] font-semibold text-twilight hover:bg-twilight/20">🎥 Video</a>
+                    )}
+                  </div>
+                )}
+                </div>
               </div>
               <div className="flex shrink-0 flex-wrap gap-1.5">
                 <button onClick={() => updateFeedback(f.id, { featured: !f.featured })} className="rounded-lg border border-firefly/25 px-2.5 py-1 text-xs font-semibold text-forest hover:bg-firefly/10">
                   {f.featured ? "★ Unfeature" : "☆ Feature"}
                 </button>
+                {f.publishedReviewId ? (
+                  <button onClick={() => unpublishFeedbackReview(f.id)} title="Remove from the public site" className="rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100">
+                    ✓ Published · unpublish
+                  </button>
+                ) : (
+                  <button onClick={() => publishFeedbackAsReview(f.id)} title="Show this on the public testimonials" className="rounded-lg border border-twilight/40 px-2.5 py-1 text-xs font-semibold text-twilight hover:bg-twilight/10">
+                    ✦ Publish as testimonial
+                  </button>
+                )}
                 <button onClick={() => updateFeedback(f.id, { archived: !f.archived })} className="rounded-lg border border-firefly/25 px-2.5 py-1 text-xs font-semibold text-ink-soft hover:bg-firefly/10">
                   {f.archived ? "Restore" : "Archive"}
                 </button>

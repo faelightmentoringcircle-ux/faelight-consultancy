@@ -1066,6 +1066,13 @@ export interface Feedback {
   featured: boolean; // admin flagged it
   archived: boolean;
   createdAt: string;
+  // Optional media — a profile photo (both), plus company logo / extra photos
+  // (clients) and an optional video-testimonial link (both).
+  photo?: string; // profile / headshot (compressed data URL)
+  logo?: string; // company logo (compressed data URL)
+  images?: string[]; // a few extra photos
+  videoUrl?: string; // YouTube / Vimeo / Loom link
+  publishedReviewId?: string; // set when published to the public testimonials
 }
 
 const FEEDBACK_SEED: Feedback[] = [
@@ -1096,6 +1103,54 @@ export function feedbackAverage(): number {
   const list = getFeedback().filter((f) => !f.archived);
   if (!list.length) return 0;
   return Math.round((list.reduce((s, f) => s + f.rating, 0) / list.length) * 10) / 10;
+}
+
+// Map a client's chosen service to a public category slug (best-effort).
+function serviceToSlug(service?: string): CategorySlug | null {
+  switch ((service || "").toLowerCase()) {
+    case "mentoring circle": return "mentoring";
+    case "systems": return "systems";
+    case "experiences": return "experiences";
+    default: return null;
+  }
+}
+
+/**
+ * Publish a collected Feedback as an approved public testimonial (Review),
+ * carrying the person's name, words, rating and any profile photo / logo.
+ * Re-publishing updates the same review instead of creating a duplicate.
+ */
+export function publishFeedbackAsReview(id: string): Review | null {
+  const f = getFeedback().find((x) => x.id === id);
+  if (!f) return null;
+  const roleCompany = f.kind === "client"
+    ? (f.company?.trim() || f.service || "Faelight client")
+    : (f.classTaken ? `${f.classTaken}${f.batch ? ` · Batch ${f.batch}` : ""}` : "Faelight student");
+  const payload = {
+    author: f.name || "Anonymous",
+    roleCompany,
+    quote: (f.liked || "").trim(),
+    categorySlug: f.kind === "client" ? serviceToSlug(f.service) : (f.classTaken ? "mentoring" as CategorySlug : null),
+    rating: f.rating,
+    photo: f.photo,
+    logo: f.logo,
+    videoUrl: f.videoUrl,
+    status: "approved" as ReviewStatus,
+  };
+  if (f.publishedReviewId) {
+    updateReview(f.publishedReviewId, payload);
+    return getReviews().find((r) => r.id === f.publishedReviewId) ?? null;
+  }
+  const r = addReview(payload);
+  updateFeedback(id, { featured: true, publishedReviewId: r.id });
+  return r;
+}
+export function unpublishFeedbackReview(id: string) {
+  const f = getFeedback().find((x) => x.id === id);
+  if (f?.publishedReviewId) {
+    removeReview(f.publishedReviewId);
+    updateFeedback(id, { publishedReviewId: undefined });
+  }
 }
 
 // --- Client List & Contacts (admin-only) -----------------------------
@@ -2598,6 +2653,9 @@ export interface Review {
   createdAt: string;
   /** Optional video testimonial — a YouTube/Vimeo/direct-file link, or an uploaded data URL. */
   videoUrl?: string;
+  /** Optional images (compressed data URLs) shown on the testimonial card. */
+  photo?: string; // author headshot / avatar
+  logo?: string; // company logo
 }
 
 export function getReviews(): Review[] {

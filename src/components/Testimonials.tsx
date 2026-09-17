@@ -51,18 +51,7 @@ export function Testimonials() {
         {textReviews.length > 0 ? (
           <div className={`grid gap-6 lg:grid-cols-3 ${videoReviews.length > 0 ? "mt-6" : "mt-12"}`}>
             {textReviews.slice(0, 6).map((t) => (
-              <figure key={t.id} className="card flex flex-col">
-                <div className="flex items-center justify-between">
-                  <div className="text-2xl text-firefly">❝</div>
-                  <Stars n={t.rating} />
-                </div>
-                <blockquote className="mt-2 font-serif text-lg leading-snug text-forest-deep">{t.quote}</blockquote>
-                <figcaption className="mt-auto pt-5 text-sm">
-                  <span className="font-semibold text-forest">{t.author}</span>
-                  <br />
-                  <span className="text-ink-faint">{t.roleCompany}</span>
-                </figcaption>
-              </figure>
+              <TestimonialCard key={t.id} t={t} />
             ))}
           </div>
         ) : (
@@ -82,6 +71,45 @@ export function Testimonials() {
         </div>
       </div>
     </section>
+  );
+}
+
+function initials(name: string): string {
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("") || "★";
+}
+
+// Branded "Client Testimonial" card — dark forest panel, firefly-ringed avatar,
+// gold stars and quote marks. Photo/logo are optional (from a published review).
+function TestimonialCard({ t }: { t: Review }) {
+  return (
+    <figure className="relative flex flex-col overflow-hidden rounded-3xl border border-firefly/20 bg-forest-deep p-7 text-parchment shadow-card">
+      <span aria-hidden className="pointer-events-none absolute -right-1 top-1 select-none font-serif text-7xl leading-none text-firefly/20">”</span>
+      <span aria-hidden className="pointer-events-none absolute left-4 top-3 select-none font-serif text-4xl leading-none text-firefly/30">“</span>
+
+      <div className="flex flex-col items-center text-center">
+        {t.photo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={t.photo} alt={t.author} className="h-20 w-20 rounded-full object-cover ring-4 ring-firefly shadow-glow" />
+        ) : (
+          <div className="grid h-20 w-20 place-items-center rounded-full bg-firefly/15 font-serif text-2xl text-firefly ring-4 ring-firefly">
+            {initials(t.author)}
+          </div>
+        )}
+        <figcaption className="mt-3">
+          <p className="font-serif text-lg font-bold uppercase tracking-wide text-parchment">{t.author}</p>
+          <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-eyebrow text-firefly">{t.roleCompany}</p>
+        </figcaption>
+        <div className="mt-2"><Stars n={t.rating} /></div>
+        {t.logo && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={t.logo} alt="" className="mt-3 h-6 max-w-[100px] object-contain opacity-90" />
+        )}
+      </div>
+
+      {t.quote && (
+        <blockquote className="mt-4 text-center text-sm leading-relaxed text-parchment/85">{t.quote}</blockquote>
+      )}
+    </figure>
   );
 }
 
