@@ -10,6 +10,7 @@ import { OfferingsMenu } from "./OfferingsMenu";
 import { ContactName, ContactEmailLink, PricingDisclaimer } from "./PublicContact";
 import { CatName, CatTagline, CatAudience } from "./CategoryText";
 import { EditableStarList } from "./EditableStarList";
+import { Testimonials } from "./Testimonials";
 
 interface Extra {
   title: string;
@@ -115,6 +116,9 @@ export function SubBrandPage({
           </p>
         </div>
       </section>
+
+      {/* Testimonials for this service (hidden when there are none) --- */}
+      <Testimonials category={slug} />
 
       {/* Best for line ---------------------------------------------- */}
       <section className="section">

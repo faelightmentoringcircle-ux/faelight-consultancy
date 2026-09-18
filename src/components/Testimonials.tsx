@@ -16,7 +16,7 @@ function Stars({ n }: { n?: number }) {
   );
 }
 
-export function Testimonials() {
+export function Testimonials({ category }: { category?: CategorySlug } = {}) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [open, setOpen] = useState(false);
 
@@ -26,21 +26,30 @@ export function Testimonials() {
     return onStoreChange(sync);
   }, []);
 
-  const videoReviews = reviews.filter((r) => videoEmbed(r.videoUrl));
-  const textReviews = reviews.filter((r) => !videoEmbed(r.videoUrl));
+  // On a sub-brand page (category set) show only that service's testimonials.
+  const shown = category ? reviews.filter((r) => r.categorySlug === category) : reviews;
+  const videoReviews = shown.filter((r) => videoEmbed(r.videoUrl));
+  const textReviews = shown.filter((r) => !videoEmbed(r.videoUrl));
+
+  // Don't render an empty testimonials block on a sub-brand page.
+  if (category && shown.length === 0) return null;
+
+  const catName = category ? CATEGORIES.find((c) => c.slug === category)?.name : null;
 
   return (
-    <section className="section bg-parchment-warm/60">
+    <section id="testimonials" className="section scroll-mt-24 bg-parchment-warm/60">
       <div className="container-fae">
         <div className="text-center">
           <Eyebrow>Kind words</Eyebrow>
-          <h2 className="mt-3 font-serif text-2xl text-forest-deep sm:text-3xl">What people say</h2>
+          <h2 className="mt-3 font-serif text-2xl text-forest-deep sm:text-3xl">
+            {catName ? <>What people say about {catName}</> : "What people say"}
+          </h2>
           <p className="mx-auto mt-3 max-w-md text-sm text-ink-faint">
-            Real words from the people and teams we've worked with.
+            Real words from the people and teams we&apos;ve worked with.
           </p>
         </div>
 
-        {reviews.length > 0 ? (
+        {shown.length > 0 ? (
           <div className="mt-12">
             <TestimonialsGrid reviews={[...videoReviews, ...textReviews].slice(0, 6)} />
           </div>

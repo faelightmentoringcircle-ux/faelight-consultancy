@@ -180,6 +180,7 @@ function EditFeedbackModal({ f, onClose }: { f: Feedback; onClose: () => void })
   const [videoUrl, setVideoUrl] = useState(f.videoUrl || "");
   const [photo, setPhoto] = useState(f.photo || "");
   const [logo, setLogo] = useState(f.logo || "");
+  const [images, setImages] = useState<string[]>(f.images || []);
 
   const inp = "w-full rounded-lg border border-firefly/25 bg-white px-3 py-2 text-sm outline-none focus:border-firefly";
   const lbl = "block text-[11px] font-semibold uppercase tracking-wide text-ink-faint";
@@ -200,6 +201,7 @@ function EditFeedbackModal({ f, onClose }: { f: Feedback; onClose: () => void })
       videoUrl: videoUrl.trim() || undefined,
       photo: photo || undefined,
       logo: isClient && logo ? logo : undefined,
+      images: images.length ? images : undefined,
     });
     // Keep the live testimonial in sync if this review is already published.
     if (f.publishedReviewId) publishFeedbackAsReview(f.id);
@@ -262,6 +264,30 @@ function EditFeedbackModal({ f, onClose }: { f: Feedback; onClose: () => void })
         <div className="mt-4 flex flex-wrap items-start gap-5">
           <EditImage label="Profile photo" shape="circle" value={photo} onPick={setPhoto} max={320} />
           {kind === "client" && <EditImage label="Company logo" shape="square" value={logo} onPick={setLogo} max={400} format="png" />}
+        </div>
+
+        <div className="mt-4">
+          <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-ink-faint">More photos (up to 3)</span>
+          <div className="flex flex-wrap items-center gap-2">
+            {images.map((src, i) => (
+              <div key={i} className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={src} alt="" className="h-16 w-16 rounded-lg object-cover" />
+                <button type="button" onClick={() => setImages(images.filter((_, j) => j !== i))} className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-rose-500 text-[10px] text-white">✕</button>
+              </div>
+            ))}
+            {images.length < 3 && (
+              <label className="grid h-16 w-16 cursor-pointer place-items-center rounded-lg border border-dashed border-firefly/40 text-xl text-firefly-deep hover:bg-firefly/10">
+                +
+                <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                  const file = e.target.files?.[0]; if (!file) return;
+                  const url = await compressImage(file, 800, "jpeg");
+                  setImages((arr) => [...arr, url].slice(0, 3));
+                  e.target.value = "";
+                }} />
+              </label>
+            )}
+          </div>
         </div>
 
         <div className="mt-6 flex justify-end gap-2">
