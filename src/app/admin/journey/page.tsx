@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   getJourneyCards, addJourneyCard, updateJourneyCard, removeJourneyCard,
   getJourneyStages, addJourneyStage, renameJourneyStage, removeJourneyStage,
-  nextProjectNo, onStoreChange, JourneyCard, JourneyStage,
+  nextProjectNo, getClients, effectiveServices, onStoreChange, JourneyCard, JourneyStage,
 } from "@/lib/store";
 import { CATEGORIES, CategorySlug } from "@/lib/content";
 import { relativeDay } from "@/lib/format";
@@ -183,6 +183,25 @@ function CardModal({ card, stages, onClose }: { card: JourneyCard | null; stages
   }));
   const set = (patch: Partial<Draft>) => setDraft((x) => ({ ...x, ...patch }));
 
+  const clients = useMemo(() => getClients().filter((c) => !c.archived), []);
+  const services = useMemo(() => effectiveServices(), []);
+  // Packages for the value dropdown — narrowed to the chosen sub-brand if any.
+  const packages = useMemo(
+    () => services.filter((s) => !d.categorySlug || s.categorySlug === d.categorySlug),
+    [services, d.categorySlug],
+  );
+
+  // Picking a known client auto-fills company + contact.
+  function onClientChange(val: string) {
+    const match = clients.find((c) => c.name.toLowerCase() === val.trim().toLowerCase());
+    setDraft((x) => ({
+      ...x,
+      client: val,
+      company: match ? match.company : x.company,
+      contact: match ? (match.email || match.phone || x.contact) : x.contact,
+    }));
+  }
+
   function save() {
     const payload = {
       projectNo: d.projectNo.trim(),
@@ -214,8 +233,11 @@ function CardModal({ card, stages, onClose }: { card: JourneyCard | null; stages
               {stages.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </label>
-          <label className="space-y-1"><span className={fLbl}>Client name *</span><input className={fInput} value={d.client} onChange={(e) => set({ client: e.target.value })} /></label>
-          <label className="space-y-1"><span className={fLbl}>Company</span><input className={fInput} value={d.company} onChange={(e) => set({ company: e.target.value })} /></label>
+          <label className="space-y-1"><span className={fLbl}>Client name *</span>
+            <input className={fInput} value={d.client} onChange={(e) => onClientChange(e.target.value)} list="jc-clients" placeholder="Pick from client list or type…" />
+            <datalist id="jc-clients">{clients.map((c) => <option key={c.id} value={c.name}>{c.company}</option>)}</datalist>
+          </label>
+          <label className="space-y-1"><span className={fLbl}>Company <span className="normal-case text-ink-faint/70">(auto)</span></span><input className={fInput} value={d.company} onChange={(e) => set({ company: e.target.value })} /></label>
           <label className="space-y-1"><span className={fLbl}>Sub-brand</span>
             <select className={fInput} value={d.categorySlug} onChange={(e) => set({ categorySlug: e.target.value })}>
               <option value="">— None —</option>
@@ -223,7 +245,12 @@ function CardModal({ card, stages, onClose }: { card: JourneyCard | null; stages
             </select>
           </label>
           <label className="space-y-1"><span className={fLbl}>Contact (email / phone)</span><input className={fInput} value={d.contact} onChange={(e) => set({ contact: e.target.value })} /></label>
-          <label className="space-y-1 sm:col-span-2"><span className={fLbl}>Value / package</span><input className={fInput} value={d.value} onChange={(e) => set({ value: e.target.value })} placeholder="e.g. ₱25,000 · Foundations Cohort" /></label>
+          <label className="space-y-1 sm:col-span-2"><span className={fLbl}>Value / package</span>
+            <input className={fInput} value={d.value} onChange={(e) => set({ value: e.target.value })} list="jc-packages" placeholder="Pick a package from the system or type…" />
+            <datalist id="jc-packages">
+              {packages.map((s) => <option key={s.id} value={s.priceLabel ? `${s.name} · ${s.priceLabel}` : s.name} />)}
+            </datalist>
+          </label>
           <label className="space-y-1 sm:col-span-2"><span className={fLbl}>Notes</span><textarea rows={4} className={fInput} value={d.notes} onChange={(e) => set({ notes: e.target.value })} placeholder="Anything about this client / project…" /></label>
         </div>
         <div className="mt-6 flex justify-end gap-2">
