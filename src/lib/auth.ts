@@ -144,6 +144,7 @@ export const ADMIN_MODULES: { key: string; label: string }[] = [
   { key: "projects", label: "Projects" },
   { key: "clients", label: "Client List & Contacts" },
   { key: "leads", label: "Leads" },
+  { key: "journey", label: "Client Journey" },
   { key: "bookings", label: "Bookings" },
   { key: "payments", label: "Payments" },
   { key: "invoices", label: "Invoices" },

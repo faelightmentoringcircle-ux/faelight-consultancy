@@ -47,6 +47,7 @@ const NAV_GROUPS: { title?: string; items: NavEntry[] }[] = [
     items: [
       { href: "/admin/clients", label: "Client List & Contacts", icon: "☎", module: "clients" },
       { href: "/admin/leads", label: "Leads", icon: "✦", module: "leads" },
+      { href: "/admin/journey", label: "Client Journey", icon: "⇄", module: "journey" },
       { href: "/admin/bookings", label: "Bookings", icon: "◷", module: "bookings" },
       { href: "/admin/meetings", label: "Meetings", icon: "▣", module: "meetings" },
       { href: "/admin/payments", label: "Payments", icon: "₱", module: "payments" },

@@ -188,6 +188,8 @@ const KEYS = {
   taskStatuses: "fae.taskstatuses.v1",
   projectStatuses: "fae.projectstatuses.v1",
   leadStatuses: "fae.leadstatuses.v1",
+  journeyCards: "fae.journeycards.v1",
+  journeyStages: "fae.journeystages.v1",
   brands: "fae.brands.v1",
   home: "fae.home.v1",
   pool: "fae.pool.v1",
@@ -2256,6 +2258,91 @@ export function removeLeadStatus(name: string) {
   const fallback = cur.find((s) => s !== name) ?? DEFAULT_LEAD_STATUSES[0];
   setLeadStatuses(cur.filter((s) => s !== name));
   write(KEYS.leads, read<Lead[]>(KEYS.leads, []).map((l) => (l.status === name ? { ...l, status: fallback } : l)));
+}
+
+// --- Client Journey (Kanban) -----------------------------------------
+// A board that follows each engagement through the sales-to-delivery journey.
+// One client can have several cards — one per project (projectNo). Stages are
+// admin-editable board columns; a card is tagged by sub-brand for filtering.
+export type JourneyStage = string;
+export const DEFAULT_JOURNEY_STAGES: string[] = [
+  "New Leads",
+  "Contacted",
+  "Proposal",
+  "Negotiation",
+  "Execution",
+  "Closed",
+  "Upsell",
+];
+export interface JourneyCard {
+  id: string;
+  projectNo: string; // e.g. FL-2026-001 (same client can have several)
+  client: string;
+  company?: string;
+  categorySlug?: CategorySlug | null; // systems | mentoring | experiences
+  contact?: string; // email / phone
+  value?: string; // deal value / package (free text)
+  notes?: string;
+  stage: JourneyStage;
+  createdAt: string;
+  archived?: boolean;
+}
+
+export function getJourneyStages(): string[] {
+  if (typeof window === "undefined") return [...DEFAULT_JOURNEY_STAGES];
+  seedIfMissing(KEYS.journeyStages, () => [...DEFAULT_JOURNEY_STAGES]);
+  const list = read<string[]>(KEYS.journeyStages, [...DEFAULT_JOURNEY_STAGES]);
+  return list.length ? list : [...DEFAULT_JOURNEY_STAGES];
+}
+export function setJourneyStages(list: string[]) {
+  const clean = list.map((s) => s.trim()).filter(Boolean);
+  write(KEYS.journeyStages, clean.length ? clean : [...DEFAULT_JOURNEY_STAGES]);
+}
+export function addJourneyStage(name: string) {
+  const n = name.trim();
+  if (!n) return;
+  const cur = getJourneyStages();
+  if (!cur.includes(n)) setJourneyStages([...cur, n]);
+}
+export function renameJourneyStage(oldName: string, newName: string) {
+  const n = newName.trim();
+  if (!n) return;
+  setJourneyStages(getJourneyStages().map((s) => (s === oldName ? n : s)));
+  write(KEYS.journeyCards, getJourneyCards().map((c) => (c.stage === oldName ? { ...c, stage: n } : c)));
+}
+export function removeJourneyStage(name: string) {
+  const cur = getJourneyStages();
+  if (cur.length <= 1) return;
+  const fallback = cur.find((s) => s !== name) ?? DEFAULT_JOURNEY_STAGES[0];
+  setJourneyStages(cur.filter((s) => s !== name));
+  write(KEYS.journeyCards, getJourneyCards().map((c) => (c.stage === name ? { ...c, stage: fallback } : c)));
+}
+
+export function getJourneyCards(): JourneyCard[] {
+  return read<JourneyCard[]>(KEYS.journeyCards, []).sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+}
+export function addJourneyCard(input: Omit<JourneyCard, "id" | "createdAt">): JourneyCard {
+  const c: JourneyCard = { ...input, id: uid("jc"), createdAt: new Date().toISOString() };
+  write(KEYS.journeyCards, [c, ...read<JourneyCard[]>(KEYS.journeyCards, [])]);
+  return c;
+}
+export function updateJourneyCard(id: string, patch: Partial<JourneyCard>) {
+  write(KEYS.journeyCards, read<JourneyCard[]>(KEYS.journeyCards, []).map((c) => (c.id === id ? { ...c, ...patch } : c)));
+}
+export function removeJourneyCard(id: string) {
+  write(KEYS.journeyCards, read<JourneyCard[]>(KEYS.journeyCards, []).filter((c) => c.id !== id));
+}
+/** Suggest the next project number: FL-<year>-<zero-padded sequence>. */
+export function nextProjectNo(): string {
+  const year = new Date().getFullYear();
+  const prefix = `FL-${year}-`;
+  const nums = getJourneyCards()
+    .map((c) => c.projectNo)
+    .filter((p) => p?.startsWith(prefix))
+    .map((p) => parseInt(p.slice(prefix.length), 10))
+    .filter((n) => !isNaN(n));
+  const next = (nums.length ? Math.max(...nums) : 0) + 1;
+  return `${prefix}${String(next).padStart(3, "0")}`;
 }
 
 // --- Notes -----------------------------------------------------------
