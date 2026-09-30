@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getApprovedReviews, onStoreChange, Review } from "@/lib/store";
-import { videoEmbed } from "@/lib/format";
 import { TestimonialsGrid } from "@/components/Testimonials";
 import { Eyebrow, Fireflies, FairySwirl, Glow } from "@/components/Motifs";
 
+const PAGE = 9;
+
 export default function TestimonialsPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [visible, setVisible] = useState(PAGE);
 
   useEffect(() => {
     const sync = () => setReviews(getApprovedReviews());
@@ -16,8 +18,9 @@ export default function TestimonialsPage() {
     return onStoreChange(sync);
   }, []);
 
-  const videoReviews = reviews.filter((r) => videoEmbed(r.videoUrl));
-  const textReviews = reviews.filter((r) => !videoEmbed(r.videoUrl));
+  // Highlighted testimonials lead the list; the rest follow (newest first).
+  const ordered = [...reviews.filter((r) => r.highlighted), ...reviews.filter((r) => !r.highlighted)];
+  const shown = ordered.slice(0, visible);
 
   return (
     <>
@@ -45,7 +48,16 @@ export default function TestimonialsPage() {
               <Link href="/feedback" className="font-semibold text-firefly-deep hover:underline">share your experience ✦</Link>.
             </p>
           ) : (
-            <TestimonialsGrid reviews={[...videoReviews, ...textReviews]} />
+            <>
+              <TestimonialsGrid reviews={shown} />
+              {visible < ordered.length && (
+                <div className="mt-10 text-center">
+                  <button onClick={() => setVisible((v) => v + PAGE)} className="btn-ghost">
+                    Load more ({ordered.length - visible} more)
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>

@@ -2743,6 +2743,8 @@ export interface Review {
   /** Optional images (compressed data URLs) shown on the testimonial card. */
   photo?: string; // author headshot / avatar
   logo?: string; // company logo
+  /** Admin-curated: highlighted reviews are the ones featured on the homepage. */
+  highlighted?: boolean;
 }
 
 export function getReviews(): Review[] {

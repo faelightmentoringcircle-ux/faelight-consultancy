@@ -54,7 +54,7 @@ export default function ReviewsPage() {
     <>
       <AdminHeader
         title="Reviews & Video Testimonials"
-        subtitle="Approve written reviews and publish video testimonials on the public site."
+        subtitle="Approve reviews, publish video testimonials, and ★ Highlight the ones to feature on the homepage."
         action={
           <button onClick={() => setAdding(true)} className="btn-primary text-sm">
             ✦ Add testimonial
@@ -110,6 +110,7 @@ export default function ReviewsPage() {
                       <p className="font-medium text-forest-deep">{r.author}</p>
                       <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${STATUS_STYLES[r.status]}`}>{r.status}</span>
                       {v && <span className="rounded-full bg-twilight/15 px-2.5 py-0.5 text-xs font-semibold text-twilight">▶ Video</span>}
+                      {r.highlighted && <span className="rounded-full bg-firefly/20 px-2.5 py-0.5 text-xs font-semibold text-firefly-deep">★ Highlighted</span>}
                       {r.rating && <span className="text-sm text-firefly">{"★".repeat(r.rating)}</span>}
                       <CategoryTag slug={r.categorySlug} />
                       <span className="text-xs text-ink-faint">{relativeDay(r.createdAt)}</span>
@@ -133,6 +134,13 @@ export default function ReviewsPage() {
                 </div>
 
                 <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-col sm:items-stretch">
+                  <button
+                    onClick={() => updateReview(r.id, { highlighted: !r.highlighted })}
+                    title="Feature this on the homepage"
+                    className={`rounded-lg border px-3 py-1.5 text-xs font-semibold ${r.highlighted ? "border-firefly bg-firefly/15 text-firefly-deep" : "border-firefly/30 text-ink-soft hover:border-firefly"}`}
+                  >
+                    {r.highlighted ? "★ Highlighted" : "☆ Highlight"}
+                  </button>
                   {r.status !== "approved" && (
                     <button onClick={() => updateReview(r.id, { status: "approved" })} className="rounded-lg border border-emerald-400 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50">
                       ✓ Approve &amp; publish

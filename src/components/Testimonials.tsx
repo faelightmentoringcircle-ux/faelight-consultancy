@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { getApprovedReviews, addReview, onStoreChange, Review } from "@/lib/store";
 import { CATEGORIES, CategorySlug } from "@/lib/content";
 import { videoEmbed } from "@/lib/format";
@@ -27,7 +28,11 @@ export function Testimonials({ category }: { category?: CategorySlug } = {}) {
   }, []);
 
   // On a sub-brand page (category set) show only that service's testimonials.
-  const shown = category ? reviews.filter((r) => r.categorySlug === category) : reviews;
+  const pool = category ? reviews.filter((r) => r.categorySlug === category) : reviews;
+  const hi = pool.filter((r) => r.highlighted);
+  // Homepage is curated: if any are highlighted, show only those; otherwise fall
+  // back to the most recent so the section is never empty. Highlighted first.
+  const shown = !category && hi.length ? hi : [...hi, ...pool.filter((r) => !r.highlighted)];
   const videoReviews = shown.filter((r) => videoEmbed(r.videoUrl));
   const textReviews = shown.filter((r) => !videoEmbed(r.videoUrl));
 
@@ -57,13 +62,16 @@ export function Testimonials({ category }: { category?: CategorySlug } = {}) {
           <p className="mt-10 text-center text-sm text-ink-faint">Be the first to share your experience ✦</p>
         )}
 
-        <div className="mt-10 text-center">
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-3 text-center">
           {open ? (
             <ReviewForm onDone={() => setOpen(false)} />
           ) : (
-            <button onClick={() => setOpen(true)} className="btn-ghost">
-              ✦ Share your experience
-            </button>
+            <>
+              <button onClick={() => setOpen(true)} className="btn-ghost">
+                ✦ Share your experience
+              </button>
+              <Link href="/testimonials" className="btn-ghost">See all testimonials →</Link>
+            </>
           )}
         </div>
       </div>
