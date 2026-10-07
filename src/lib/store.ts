@@ -178,6 +178,7 @@ const KEYS = {
   campaigns: "fae.campaigns.v1",
   social: "fae.social.v1",
   socialPosts: "fae.socialposts.v1",
+  keyDates: "fae.keydates.v1",
   promos: "fae.promos.v1",
   videos: "fae.videos.v1",
   intros: "fae.intros.v1",
@@ -2697,6 +2698,41 @@ export function updateSocialPost(id: string, patch: Partial<SocialPost>) {
 }
 export function removeSocialPost(id: string) {
   write(KEYS.socialPosts, read<SocialPost[]>(KEYS.socialPosts, []).filter((p) => p.id !== id));
+}
+
+// --- Marketing key dates (content calendar) --------------------------
+// Important marketing dates shown on the content calendar alongside posts:
+// launches, cohort openings, promos, holidays, events.
+export type KeyDateType = "launch" | "cohort" | "promo" | "holiday" | "event" | "other";
+export const KEY_DATE_TYPES: { value: KeyDateType; label: string }[] = [
+  { value: "launch", label: "Launch" },
+  { value: "cohort", label: "Class / Cohort" },
+  { value: "promo", label: "Promo / Sale" },
+  { value: "holiday", label: "Holiday" },
+  { value: "event", label: "Event" },
+  { value: "other", label: "Other" },
+];
+export interface KeyDate {
+  id: string;
+  title: string;
+  date: string; // YYYY-MM-DD
+  type: KeyDateType;
+  notes?: string;
+  createdAt: string;
+}
+export function getKeyDates(): KeyDate[] {
+  return read<KeyDate[]>(KEYS.keyDates, []).sort((a, b) => a.date.localeCompare(b.date));
+}
+export function addKeyDate(input: Omit<KeyDate, "id" | "createdAt">): KeyDate {
+  const k: KeyDate = { ...input, id: uid("key"), createdAt: new Date().toISOString() };
+  write(KEYS.keyDates, [k, ...read<KeyDate[]>(KEYS.keyDates, [])]);
+  return k;
+}
+export function updateKeyDate(id: string, patch: Partial<KeyDate>) {
+  write(KEYS.keyDates, read<KeyDate[]>(KEYS.keyDates, []).map((k) => (k.id === id ? { ...k, ...patch } : k)));
+}
+export function removeKeyDate(id: string) {
+  write(KEYS.keyDates, read<KeyDate[]>(KEYS.keyDates, []).filter((k) => k.id !== id));
 }
 
 // --- Promotions / offers ---------------------------------------------

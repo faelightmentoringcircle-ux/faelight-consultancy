@@ -8,9 +8,10 @@ import {
   runDueCampaigns, getAutomations, saveAutomations,
   getBrands, addBrand, updateBrand, removeBrand, BRAND_GROUPS, getBrandGroupOptions,
   getSocialPosts, addSocialPost, updateSocialPost, removeSocialPost, SOCIAL_PLATFORMS,
+  getKeyDates, addKeyDate, removeKeyDate, KEY_DATE_TYPES,
   getPromos, addPromo, updatePromo, removePromo,
   Lead, Campaign, SocialAccount, VideoItem, IntroItem, Automations, Brand,
-  SocialPost, SocialPostStatus, Promo,
+  SocialPost, SocialPostStatus, Promo, KeyDate, KeyDateType,
 } from "@/lib/store";
 import { CATEGORIES, CategorySlug } from "@/lib/content";
 import { formatDateTime, relativeDay, formatDateShort } from "@/lib/format";
@@ -792,12 +793,14 @@ const PLATFORM_LABEL: Record<string, string> = {
 
 function ContentCalendar() {
   const [posts, setPosts] = useState<SocialPost[]>([]);
+  const [keyDates, setKeyDates] = useState<KeyDate[]>([]);
+  const [view, setView] = useState<"month" | "planner">("month");
   const [form, setForm] = useState({ platforms: [] as string[], caption: "", link: "", date: "", time: "09:00" });
   const [editingId, setEditingId] = useState<string | null>(null);
   const input = "w-full rounded-lg border border-firefly/25 bg-white/70 px-3 py-2 text-sm outline-none focus:border-firefly";
 
   useEffect(() => {
-    const sync = () => setPosts(getSocialPosts());
+    const sync = () => { setPosts(getSocialPosts()); setKeyDates(getKeyDates()); };
     sync();
     return onStoreChange(sync);
   }, []);
@@ -834,12 +837,21 @@ function ContentCalendar() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatTile label="Scheduled" value={upcoming.filter((p) => p.status === "scheduled").length} accent="firefly" />
-        <StatTile label="Drafts" value={upcoming.filter((p) => p.status === "draft").length} accent="twilight" />
-        <StatTile label="Posted" value={posted.length} accent="forest" />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex rounded-full border border-firefly/25 bg-parchment-card p-1">
+          <button onClick={() => setView("month")} className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${view === "month" ? "bg-forest text-parchment" : "text-ink-soft"}`}>🗓 Month</button>
+          <button onClick={() => setView("planner")} className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${view === "planner" ? "bg-forest text-parchment" : "text-ink-soft"}`}>✎ Planner</button>
+        </div>
+        <div className="flex flex-wrap gap-4 text-xs text-ink-faint">
+          <span>{upcoming.filter((p) => p.status === "scheduled").length} scheduled</span>
+          <span>{upcoming.filter((p) => p.status === "draft").length} drafts</span>
+          <span>{keyDates.length} key dates</span>
+        </div>
       </div>
 
+      {view === "month" && <MonthView posts={posts} keyDates={keyDates} />}
+
+      {view === "planner" && (
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Composer */}
         <Panel>
@@ -910,6 +922,161 @@ function ContentCalendar() {
               </div>
             </Panel>
           )}
+        </div>
+      </div>
+      )}
+    </div>
+  );
+}
+
+// ── Month view: posts + marketing key dates on a calendar grid ──────────
+const KD_STYLE: Record<KeyDateType, { dot: string; chip: string }> = {
+  launch: { dot: "bg-firefly", chip: "bg-firefly/20 text-firefly-deep" },
+  cohort: { dot: "bg-forest", chip: "bg-forest/10 text-forest" },
+  promo: { dot: "bg-rose-500", chip: "bg-rose-100 text-rose-700" },
+  holiday: { dot: "bg-twilight", chip: "bg-twilight/15 text-twilight" },
+  event: { dot: "bg-blue-500", chip: "bg-blue-100 text-blue-700" },
+  other: { dot: "bg-stone-400", chip: "bg-stone-200 text-stone-600" },
+};
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const ymdOf = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+function MonthView({ posts, keyDates }: { posts: SocialPost[]; keyDates: KeyDate[] }) {
+  const [cursor, setCursor] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
+  const [selected, setSelected] = useState<string | null>(null);
+
+  const cells = useMemo(() => {
+    const first = new Date(cursor.y, cursor.m, 1);
+    const startPad = first.getDay();
+    const days = new Date(cursor.y, cursor.m + 1, 0).getDate();
+    const arr: (Date | null)[] = [];
+    for (let i = 0; i < startPad; i++) arr.push(null);
+    for (let d = 1; d <= days; d++) arr.push(new Date(cursor.y, cursor.m, d));
+    while (arr.length % 7 !== 0) arr.push(null);
+    return arr;
+  }, [cursor]);
+
+  const shift = (delta: number) => setCursor((c) => { const m = c.m + delta; return { y: c.y + Math.floor(m / 12), m: ((m % 12) + 12) % 12 }; });
+  const today = ymdOf(new Date());
+  const postsOn = (ymd: string) => posts.filter((p) => ymdOf(new Date(p.scheduledAt)) === ymd);
+  const keysOn = (ymd: string) => keyDates.filter((k) => k.date === ymd);
+
+  return (
+    <Panel>
+      <div className="flex items-center justify-between">
+        <h2 className="font-serif text-lg text-forest-deep">{MONTHS[cursor.m]} {cursor.y}</h2>
+        <div className="flex items-center gap-1">
+          <button onClick={() => shift(-1)} className="grid h-8 w-8 place-items-center rounded-lg border border-firefly/25 text-forest hover:border-firefly">‹</button>
+          <button onClick={() => { const d = new Date(); setCursor({ y: d.getFullYear(), m: d.getMonth() }); }} className="rounded-lg border border-firefly/25 px-3 py-1.5 text-xs font-semibold text-forest hover:border-firefly">Today</button>
+          <button onClick={() => shift(1)} className="grid h-8 w-8 place-items-center rounded-lg border border-firefly/25 text-forest hover:border-firefly">›</button>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-7 gap-1.5">
+        {WD.map((d) => <div key={d} className="py-1 text-center text-[10px] font-semibold uppercase tracking-wide text-ink-faint">{d}</div>)}
+      </div>
+      <div className="mt-1 grid grid-cols-7 gap-1.5">
+        {cells.map((d, i) => {
+          if (!d) return <div key={i} />;
+          const ymd = ymdOf(d);
+          const isToday = ymd === today;
+          const dayPosts = postsOn(ymd);
+          const dayKeys = keysOn(ymd);
+          return (
+            <button
+              key={i}
+              onClick={() => setSelected(ymd)}
+              className={`flex min-h-[78px] flex-col rounded-lg border p-1.5 text-left transition hover:border-firefly/60 ${selected === ymd ? "border-forest ring-1 ring-forest/30" : "border-firefly/15"} bg-parchment-card`}
+            >
+              <span className={`text-xs font-semibold ${isToday ? "grid h-5 w-5 place-items-center rounded-full bg-forest text-parchment" : "text-forest-deep"}`}>{d.getDate()}</span>
+              <div className="mt-1 space-y-0.5">
+                {dayKeys.slice(0, 2).map((k) => (
+                  <span key={k.id} className={`block truncate rounded px-1 text-[9px] font-semibold ${KD_STYLE[k.type].chip}`}>{k.title}</span>
+                ))}
+                {dayPosts.slice(0, 2).map((p) => (
+                  <span key={p.id} className={`block truncate rounded px-1 text-[9px] ${p.status === "posted" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"}`}>✎ {p.caption.slice(0, 18)}</span>
+                ))}
+                {dayKeys.length + dayPosts.length > 4 && <span className="px-1 text-[9px] text-ink-faint">+{dayKeys.length + dayPosts.length - 4} more</span>}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-3 text-[11px] text-ink-faint">
+        {KEY_DATE_TYPES.map((t) => <span key={t.value} className="flex items-center gap-1"><span className={`h-2 w-2 rounded-full ${KD_STYLE[t.value].dot}`} />{t.label}</span>)}
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-400" />✎ Content post</span>
+      </div>
+
+      {selected && (
+        <DayPanel
+          ymd={selected}
+          posts={postsOn(selected)}
+          keyDates={keysOn(selected)}
+          onClose={() => setSelected(null)}
+        />
+      )}
+    </Panel>
+  );
+}
+
+function DayPanel({ ymd, posts, keyDates, onClose }: { ymd: string; posts: SocialPost[]; keyDates: KeyDate[]; onClose: () => void }) {
+  const [title, setTitle] = useState("");
+  const [type, setType] = useState<KeyDateType>("cohort");
+  const [notes, setNotes] = useState("");
+  const d = new Date(`${ymd}T00:00:00`);
+  const pretty = d.toLocaleDateString("en-PH", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  const input = "w-full rounded-lg border border-firefly/25 bg-white px-3 py-2 text-sm outline-none focus:border-firefly";
+
+  function addKey() {
+    if (!title.trim()) return;
+    addKeyDate({ title: title.trim(), date: ymd, type, notes: notes.trim() || undefined });
+    setTitle(""); setNotes("");
+  }
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto bg-forest-deep/50 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="my-8 w-full max-w-md rounded-2xl border border-firefly/25 bg-parchment-card p-6 shadow-card" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h2 className="font-serif text-lg text-forest-deep">{pretty}</h2>
+          <button onClick={onClose} className="text-xl text-ink-faint hover:text-forest">✕</button>
+        </div>
+
+        {(keyDates.length > 0 || posts.length > 0) && (
+          <div className="mt-4 space-y-2">
+            {keyDates.map((k) => (
+              <div key={k.id} className="flex items-start justify-between gap-2 rounded-lg border border-firefly/15 px-3 py-2">
+                <div className="min-w-0">
+                  <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold ${KD_STYLE[k.type].chip}`}>{KEY_DATE_TYPES.find((t) => t.value === k.type)?.label}</span>
+                  <p className="mt-1 text-sm font-medium text-forest-deep">{k.title}</p>
+                  {k.notes && <p className="text-xs text-ink-faint">{k.notes}</p>}
+                </div>
+                <button onClick={() => removeKeyDate(k.id)} className="shrink-0 text-xs font-semibold text-rose-600 hover:underline">Delete</button>
+              </div>
+            ))}
+            {posts.map((p) => (
+              <div key={p.id} className="rounded-lg border border-firefly/15 px-3 py-2">
+                <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${p.status === "posted" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"}`}>✎ post · {p.status}</span>
+                <p className="mt-1 line-clamp-2 text-sm text-ink-soft">{p.caption}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-4 border-t border-firefly/15 pt-4">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">Add a key date</p>
+          <div className="space-y-2">
+            <input className={input} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Foundations Batch 6 opens" />
+            <div className="flex gap-2">
+              <select className={input} value={type} onChange={(e) => setType(e.target.value as KeyDateType)}>
+                {KEY_DATE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
+              <button onClick={addKey} disabled={!title.trim()} className="btn-primary !px-4 !py-2 text-xs disabled:opacity-40">Add</button>
+            </div>
+            <input className={input} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes (optional)" />
+          </div>
+          <p className="mt-3 text-[11px] text-ink-faint">Plan social posts in the ✎ Planner tab — they appear here on their scheduled day.</p>
         </div>
       </div>
     </div>
